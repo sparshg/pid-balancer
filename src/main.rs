@@ -18,7 +18,9 @@ fn model(app: &App) -> Model {
 }
 
 fn update(app: &App, model: &mut Model, update: Update) {
-    model.ball.update(app, update);
+    for _ in 0..30 {
+        model.ball.update(app, update);
+    }
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
