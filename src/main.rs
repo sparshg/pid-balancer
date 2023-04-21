@@ -23,9 +23,7 @@ fn model(app: &App) -> Model {
 }
 
 fn update(app: &App, model: &mut Model, update: Update) {
-    for _ in 0..4 {
-        model.ball.update(update);
-    }
+    model.ball.update(update);
 }
 
 fn event(app: &App, model: &mut Model, event: Event) {
@@ -34,8 +32,8 @@ fn event(app: &App, model: &mut Model, event: Event) {
             simple: Some(event),
             ..
         } => match event {
-            KeyPressed(Key::Left) => model.ball.F = -1000.0,
-            KeyPressed(Key::Right) => model.ball.F = 1000.0,
+            KeyPressed(Key::Left) => model.ball.F = -10000.0,
+            KeyPressed(Key::Right) => model.ball.F = 10000.0,
             KeyReleased(Key::Left) => model.ball.F = 0.0,
             KeyReleased(Key::Right) => model.ball.F = 0.0,
             _ => (),
