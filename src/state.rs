@@ -2,39 +2,39 @@ use nannou::prelude::PI;
 
 #[derive(Clone, Copy)]
 pub struct State {
-    pub x: f32,
-    pub v: f32,
-    pub w: f32,
-    pub th: f32,
+    pub x: f64,
+    pub v: f64,
+    pub w: f64,
+    pub th: f64,
 }
 
 impl State {
     pub fn new() -> Self {
         let x = 0.;
         let v = 0.;
-        let th = PI;
+        let th = PI as f64;
         let w = 0.0;
         State { x, v, w, th }
     }
 
-    pub fn from(x: f32, v: f32, w: f32, th: f32) -> Self {
+    pub fn from(x: f64, v: f64, w: f64, th: f64) -> Self {
         State { x, v, w, th }
     }
 
-    pub fn update(&mut self, (vdot, wdot): (f32, f32), dt: f32) {
+    pub fn update(&mut self, (vdot, wdot): (f64, f64), dt: f64) {
         self.w += wdot * dt;
         self.th += self.w * dt;
         self.v += vdot * dt;
         self.x += self.v * dt;
     }
 
-    pub fn after(&self, (vdot, wdot): (f32, f32), dt: f32) -> State {
+    pub fn after(&self, (vdot, wdot): (f64, f64), dt: f64) -> State {
         let mut new_state = self.clone();
         new_state.update((vdot, wdot), dt);
         new_state
     }
 
-    pub fn unpack(&self) -> (f32, f32, f32, f32) {
+    pub fn unpack(&self) -> (f64, f64, f64, f64) {
         (self.x, self.v, self.w, self.th)
     }
 }
