@@ -1,4 +1,5 @@
 mod ball;
+mod state;
 use ball::Ball;
 use nannou::prelude::*;
 
@@ -18,9 +19,7 @@ fn model(app: &App) -> Model {
 }
 
 fn update(app: &App, model: &mut Model, update: Update) {
-    for _ in 0..30 {
-        model.ball.update(app, update);
-    }
+    model.ball.update(update);
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {

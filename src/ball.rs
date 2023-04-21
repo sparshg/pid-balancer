@@ -1,48 +1,29 @@
+use crate::state::State;
 use nannou::prelude::*;
 
-struct State {
-    pub x: f32,
-    pub v: f32,
-    pub w: f32,
-    pub th: f32,
-}
-
-#[derive(Default)]
 pub struct Ball {
-    pub vdot: f32,
-    pub wdot: f32,
     m: f32,
     M: f32,
     l: f32,
     g: f32,
     damp: f32,
     F: f32,
+    state: State,
     radius: f32,
     color: Srgb<u8>,
 }
 
 impl Ball {
     pub fn new(color: Srgb<u8>) -> Self {
-        let x = 0.;
-        let v = 0.;
-        let vdot = 0.;
-        let th = 0.0;
-        let w = 0.0;
-        let wdot = 0.0;
         let m = 1.0;
         let M = 1.0;
         let l = 1.0;
         let g = 1.0;
         let damp = 1.0;
         let F = 1.0;
+        let state = State::new();
         let radius = 10.0;
         Ball {
-            x,
-            v,
-            vdot,
-            th,
-            w,
-            wdot,
             m,
             M,
             l,
@@ -51,28 +32,40 @@ impl Ball {
             F,
             radius,
             color,
+            state,
         }
     }
 
-    pub fn update(&mut self, app: &App, update: Update) {
+    pub fn update(&mut self, update: Update) {
         let dt = update.since_last.as_secs_f32();
-        self.v += self.vdot * dt;
-        self.w += self.wdot * dt;
-        self.x += self.v * dt;
-        self.th += self.w * dt;
+
+        let k1 = self.process_state(self.state);
+        let k2 = self.process_state(self.state.after(k1, dt * 0.5));
+        let k3 = self.process_state(self.state.after(k2, dt * 0.5));
+        let k4 = self.process_state(self.state.after(k3, dt));
+
+        let (vdot, wdot) = (
+            (k1.0 + 2.0 * k2.0 + 2.0 * k3.0 + k4.0) / 6.0,
+            (k1.1 + 2.0 * k2.1 + 2.0 * k3.1 + k4.1) / 6.0,
+        );
+        self.state.update((vdot, wdot), dt);
     }
 
-    pub fn process_state(&mut self) {
-        let denom = self.M + self.m - self.m * self.th.cos() * self.th.cos();
-        let term = self.m * self.l * self.w * self.w * self.th.sin() - self.damp * self.v + self.F;
-        self.vdot = (-self.m * self.g * self.th.cos() * self.th.sin() + term) / denom;
-        self.wdot =
-            (self.m + self.M) * self.g * self.th.sin() - self.th.cos() * term / (self.l * denom);
+    pub fn process_state(&self, state: State) -> (f32, f32) {
+        let (_, v, w, th) = state.unpack();
+
+        let denom = self.M + self.m - self.m * th.cos() * th.cos();
+        let term = self.m * self.l * w * w * th.sin() - self.damp * v + self.F;
+
+        let vdot = (-self.m * self.g * th.cos() * th.sin() + term) / denom;
+        let wdot = (self.m + self.M) * self.g * th.sin() - th.cos() * term / (self.l * denom);
+
+        (vdot, wdot)
     }
 
     pub fn display(&self, draw: &Draw) {
         draw.ellipse()
-            .x(self.x)
+            .x(0.)
             .y(0.)
             .radius(self.radius)
             .color(self.color);
