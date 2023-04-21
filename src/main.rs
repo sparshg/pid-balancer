@@ -4,7 +4,11 @@ use ball::Ball;
 use nannou::prelude::*;
 
 fn main() {
-    nannou::app(model).update(update).view(view).run();
+    nannou::app(model)
+        .update(update)
+        .event(event)
+        .view(view)
+        .run();
 }
 
 struct Model {
@@ -19,7 +23,25 @@ fn model(app: &App) -> Model {
 }
 
 fn update(app: &App, model: &mut Model, update: Update) {
-    model.ball.update(update);
+    for _ in 0..4 {
+        model.ball.update(update);
+    }
+}
+
+fn event(app: &App, model: &mut Model, event: Event) {
+    match event {
+        Event::WindowEvent {
+            simple: Some(event),
+            ..
+        } => match event {
+            KeyPressed(Key::Left) => model.ball.F = -1000.0,
+            KeyPressed(Key::Right) => model.ball.F = 1000.0,
+            KeyReleased(Key::Left) => model.ball.F = 0.0,
+            KeyReleased(Key::Right) => model.ball.F = 0.0,
+            _ => (),
+        },
+        _ => (),
+    }
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
