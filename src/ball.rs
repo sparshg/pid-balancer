@@ -5,6 +5,7 @@ use nannou::prelude::*;
 pub struct Ball {
     m: f64,
     M: f64,
+    int: f64,
     l: f64,
     g: f64,
     pub F: f64,
@@ -25,7 +26,8 @@ impl Ball {
         let l = 50.0;
         let g = 1000.;
         let F = 0.0;
-        let state = State::from(0.0, 0.0, 0.0, PI as f64);
+        let int = 0.0;
+        let state = State::from(0.0, 0.0, 0.0, std::f64::consts::PI);
         let R = 10.0;
         let (b1, b2) = (50., 20.);
         let m1 = m + M + ml + 3. * mw;
@@ -38,6 +40,7 @@ impl Ball {
             l,
             g,
             F,
+            int,
             R,
             color,
             state,
@@ -53,6 +56,10 @@ impl Ball {
     pub fn update(&mut self, update: Update) {
         let steps = 100;
         let dt = update.since_last.as_secs_f64() / steps as f64;
+        // let error = PI as f64 - self.state.th;
+        // self.int += error * dt;
+        // self.F = (error * 1000.0 - self.state.w * 600.0 + self.int * 1000.) * 100.;
+        // println!("{}", error);
         for _ in 0..steps {
             let k1 = self.process_state(self.state);
             let k2 = self.process_state(self.state.after(k1, dt * 0.5));
@@ -62,12 +69,14 @@ impl Ball {
             let k_avg = (
                 (k1.0 + 2.0 * k2.0 + 2.0 * k3.0 + k4.0) / 6.0,
                 (k1.1 + 2.0 * k2.1 + 2.0 * k3.1 + k4.1) / 6.0,
+                (k1.2 + 2.0 * k2.2 + 2.0 * k3.2 + k4.2) / 6.0,
+                (k1.3 + 2.0 * k2.3 + 2.0 * k3.3 + k4.3) / 6.0,
             );
             self.state.update(k_avg, dt);
         }
     }
 
-    pub fn process_state(&self, state: State) -> (f64, f64) {
+    pub fn process_state(&self, state: State) -> (f64, f64, f64, f64) {
         let (_, v, w, th) = state.unpack();
 
         let (s, c) = (th.sin(), th.cos());
@@ -81,13 +90,20 @@ impl Ball {
             + self.m3 * self.l * self.b2 * w * c;
         (
             (f4 + self.m2 * self.l * self.l * self.F) / d,
+            v,
             (f2 - self.m3 * self.l * c * self.F) / d,
+            w,
         )
     }
 
     pub fn display(&self, draw: &Draw) {
         draw.rect().x_y(0.0, 0.0).w_h(640.0, 10.0).color(WHITE);
-        let (x, th) = (self.state.x as f32, self.state.th as f32);
+        let (x, v, w, th) = (
+            self.state.x as f32,
+            self.state.v,
+            self.state.w,
+            self.state.th as f32,
+        );
 
         draw.rect().x_y(x, 15.0).w_h(40.0, 20.0).color(self.color);
 

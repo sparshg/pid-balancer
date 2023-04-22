@@ -12,7 +12,7 @@ impl State {
     pub fn new() -> Self {
         let x = 0.;
         let v = 0.;
-        let th = PI as f64;
+        let th = std::f64::consts::PI;
         let w = 0.0;
         State { x, v, w, th }
     }
@@ -21,16 +21,16 @@ impl State {
         State { x, v, w, th }
     }
 
-    pub fn update(&mut self, (vdot, wdot): (f64, f64), dt: f64) {
+    pub fn update(&mut self, (vdot, v, wdot, w): (f64, f64, f64, f64), dt: f64) {
         self.w += wdot * dt;
-        self.th += self.w * dt;
+        self.th += w * dt;
         self.v += vdot * dt;
-        self.x += self.v * dt;
+        self.x += v * dt;
     }
 
-    pub fn after(&self, (vdot, wdot): (f64, f64), dt: f64) -> State {
+    pub fn after(&self, (vdot, v, wdot, w): (f64, f64, f64, f64), dt: f64) -> State {
         let mut new_state = self.clone();
-        new_state.update((vdot, wdot), dt);
+        new_state.update((vdot, v, wdot, w), dt);
         new_state
     }
 
