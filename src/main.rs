@@ -1,50 +1,28 @@
+use ball::Ball;
+use macroquad::prelude::*;
 mod ball;
 mod state;
-use ball::Ball;
-use nannou::prelude::*;
-
-fn main() {
-    nannou::app(model)
-        .update(update)
-        .event(event)
-        .view(view)
-        .run();
-}
-
-struct Model {
-    ball: Ball,
-}
-
-fn model(app: &App) -> Model {
-    app.new_window().size(640, 480).build().unwrap();
-    Model {
-        ball: Ball::new(BLUE),
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Asteroids".to_string(),
+        fullscreen: false,
+        window_resizable: true,
+        // window_width: 1400,
+        // window_height: 800,
+        ..Default::default()
     }
 }
+#[macroquad::main(window_conf)]
+async fn main() {
+    let mut ball = Ball::new();
+    loop {
+        clear_background(LIGHTGRAY);
+        if is_key_pressed(KeyCode::Q) || is_key_pressed(KeyCode::Escape) {
+            break;
+        }
+        ball.update(get_frame_time() as f64);
+        ball.display();
 
-fn update(app: &App, model: &mut Model, update: Update) {
-    model.ball.update(update);
-}
-
-fn event(app: &App, model: &mut Model, event: Event) {
-    match event {
-        Event::WindowEvent {
-            simple: Some(event),
-            ..
-        } => match event {
-            KeyPressed(Key::Left) => model.ball.F = -10000.0,
-            KeyPressed(Key::Right) => model.ball.F = 10000.0,
-            KeyReleased(Key::Left) => model.ball.F = 0.0,
-            KeyReleased(Key::Right) => model.ball.F = 0.0,
-            _ => (),
-        },
-        _ => (),
+        next_frame().await
     }
-}
-
-fn view(app: &App, model: &Model, frame: Frame) {
-    let draw = app.draw();
-    draw.background().color(DIMGRAY);
-    model.ball.display(&draw);
-    draw.to_frame(app, &frame).unwrap();
 }

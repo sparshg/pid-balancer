@@ -1,4 +1,4 @@
-use nannou::prelude::PI;
+use std::f64::consts::PI;
 
 #[derive(Clone, Copy)]
 pub struct State {

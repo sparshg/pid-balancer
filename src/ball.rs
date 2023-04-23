@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 
+use std::f64::consts::PI;
+
 use crate::state::State;
-use nannou::prelude::*;
 pub struct Ball {
     m: f64,
     M: f64,
@@ -17,19 +18,18 @@ pub struct Ball {
     mw: f64,
     b1: f64,
     b2: f64,
-    color: Srgb<u8>,
 }
 
 impl Ball {
-    pub fn new(color: Srgb<u8>) -> Self {
+    pub fn new() -> Self {
         let (M, m, ml, mw) = (50., 10., 10., 10.);
         let l = 50.0;
         let g = 1000.;
         let F = 0.0;
         let int = 0.0;
-        let state = State::from(0.0, 0.0, 0.0, std::f64::consts::PI);
+        let state = State::from(0.0, 0.0, 0.0, std::f64::consts::PI + 1.);
         let R = 10.0;
-        let (b1, b2) = (50., 20.);
+        let (b1, b2) = (10., 5.);
         let m1 = m + M + ml + 3. * mw;
         let m2 = m + ml / 3.;
         let m3 = m + ml / 2.;
@@ -42,7 +42,6 @@ impl Ball {
             F,
             int,
             R,
-            color,
             state,
             b1,
             b2,
@@ -53,13 +52,17 @@ impl Ball {
         }
     }
 
-    pub fn update(&mut self, update: Update) {
-        let steps = 100;
-        let dt = update.since_last.as_secs_f64() / steps as f64;
-        // let error = PI as f64 - self.state.th;
-        // self.int += error * dt;
-        // self.F = (error * 1000.0 - self.state.w * 600.0 + self.int * 1000.) * 100.;
-        // println!("{}", error);
+    pub fn update(&mut self, dt: f64) {
+        let error = PI - self.state.th;
+        self.int += error * dt;
+        if self.F.abs() != 10000.0 {
+            self.F = 1000. * (error * 250.0 - self.state.w * 50.0 + self.int * 200.);
+        } else {
+            self.int = 0.;
+        }
+
+        let steps = 1;
+        let dt = dt / steps as f64;
         for _ in 0..steps {
             let k1 = self.process_state(self.state);
             let k2 = self.process_state(self.state.after(k1, dt * 0.5));
@@ -96,32 +99,27 @@ impl Ball {
         )
     }
 
-    pub fn display(&self, draw: &Draw) {
-        draw.rect().x_y(0.0, 0.0).w_h(640.0, 10.0).color(WHITE);
-        let (x, v, w, th) = (
-            self.state.x as f32,
-            self.state.v,
-            self.state.w,
-            self.state.th as f32,
-        );
+    pub fn display(&self) {
+        //     draw.rect().x_y(0.0, 0.0).w_h(640.0, 10.0).color(BLUE);
+        //     let (x, th) = (self.state.x as f32, self.state.th as f32);
 
-        draw.rect().x_y(x, 15.0).w_h(40.0, 20.0).color(self.color);
+        //     draw.rect().x_y(x, 15.0).w_h(40.0, 20.0).color(self.color);
 
-        draw.line()
-            .start(pt2(x, 15.0))
-            .end(pt2(
-                x + self.l as f32 * th.sin(),
-                15.0 - self.l as f32 * th.cos(),
-            ))
-            .weight(2.0)
-            .color(WHITE);
+        //     draw.line()
+        //         .start(pt2(x, 15.0))
+        //         .end(pt2(
+        //             x + self.l as f32 * th.sin(),
+        //             15.0 - self.l as f32 * th.cos(),
+        //         ))
+        //         .weight(2.0)
+        //         .color(WHITE);
 
-        draw.ellipse()
-            .x_y(
-                x + self.l as f32 * th.sin(),
-                15.0 - self.l as f32 * th.cos(),
-            )
-            .w_h(self.R as f32 * 2.0, self.R as f32 * 2.0)
-            .color(self.color);
+        //     draw.ellipse()
+        //         .x_y(
+        //             x + self.l as f32 * th.sin(),
+        //             15.0 - self.l as f32 * th.cos(),
+        //         )
+        //         .w_h(self.R as f32 * 2.0, self.R as f32 * 2.0)
+        //         .color(self.color);
     }
 }
