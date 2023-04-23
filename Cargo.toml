@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-macroquad = "0.3.25"
+macroquad = { git="https://github.com/not-fl3/macroquad.git", rev="f5bab92" }

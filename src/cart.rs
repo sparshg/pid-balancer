@@ -2,10 +2,7 @@
 
 use std::f64::consts::PI;
 
-use macroquad::{
-    prelude::{Color, BLACK},
-    shapes::{draw_circle, draw_circle_lines, draw_line, draw_rectangle_lines},
-};
+use macroquad::prelude::*;
 
 use crate::state::State;
 pub struct Cart {
@@ -28,14 +25,14 @@ pub struct Cart {
 
 impl Cart {
     pub fn new() -> Self {
-        let (M, m, ml, mw) = (50., 10., 10., 10.);
+        let (M, m, ml, mw) = (50., 10., 1., 10.);
         let l = 300.0;
         let g = 1000.;
         let F = 0.0;
         let int = 0.0;
         let state = State::from(0.0, 0.0, 0.0, std::f64::consts::PI + 0.4);
         let R = 30.0;
-        let r = 20.0;
+        let r = 30.0;
         let (b1, b2) = (10., 5.);
         let m1 = m + M + ml + 3. * mw;
         let m2 = m + ml / 3.;
@@ -63,10 +60,11 @@ impl Cart {
     pub fn update(&mut self, dt: f64) {
         let error = PI - self.state.th;
         self.int += error * dt;
-        if self.F.abs() != 10000.0 {
-            self.F = 1000. * (error * 250.0 - self.state.w * 50.0 + self.int * 200.);
-        } else {
-            self.int = 0.;
+        self.F = 1000. * (error * 350.0 - self.state.w * 100.0 + self.int * 200.);
+        if is_key_down(KeyCode::Left) {
+            self.F = -10000.;
+        } else if is_key_down(KeyCode::Right) {
+            self.F = 10000.;
         }
 
         let steps = 1;
@@ -111,23 +109,42 @@ impl Cart {
 
     pub fn display(&self, color: Color, thickness: f32, length: f32, depth: f32, w: f32, h: f32) {
         draw_line(-length, -depth, length, -depth, thickness, color);
-        let ticks = 25;
-        for i in 1..ticks - 2 {
+
+        let scale = 0.001;
+        let mut x = 0.;
+        // let mut x = self.state.x as f32 * scale;
+        // if x + w * 0.5 > length {
+        //     x = length - w * 0.5;
+        // } else if x - w * 0.5 < -length {
+        //     x = -length + w * 0.5;
+        // }
+        let R = self.R as f32 * scale;
+        let (c, s) = (
+            (self.state.x / self.R).cos() as f32,
+            (self.state.x / self.R).sin() as f32,
+        );
+
+        let ticks = 30;
+        let gap = 2. / ticks as f32;
+        let offset = self.state.x as f32 * scale % gap;
+        for i in 0..ticks + 2 {
             draw_line(
-                -length + (2. / ticks as f32) * i as f32,
-                -depth,
-                -length + (2. / ticks as f32) * i as f32 - 0.03,
+                (-offset + gap * i as f32 - 1.) * length,
+                -depth - 0.001,
+                (-offset + gap * i as f32 - 1.) * length - 0.03,
                 -depth - 0.03,
                 thickness,
                 color,
             );
         }
-
-        let scale = 0.001;
-        let x = self.state.x as f32 * scale;
-        let R = self.R as f32 * scale;
-        let (c, s) = ((x / R).cos(), (x / R).sin());
-
+        draw_rectangle(-1., -depth - 0.001, 1. - length - 0.003, -0.04, BLUE);
+        draw_rectangle(
+            length + 0.003,
+            -depth - 0.001,
+            1. - length - 0.003,
+            -0.04,
+            BLUE,
+        );
         // cart
         draw_rectangle_lines(x - 0.5 * w, -depth + 2. * R, w, h, thickness * 2., color);
 

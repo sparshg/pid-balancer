@@ -5,7 +5,7 @@ mod state;
 fn window_conf() -> Conf {
     Conf {
         window_title: "Cart".to_string(),
-        fullscreen: true,
+        // fullscreen: true,
         window_resizable: true,
         // window_width: 600,
         // window_height: 600,
@@ -24,12 +24,18 @@ async fn main() {
             ..Default::default()
         });
         clear_background(BLUE);
-        if is_key_pressed(KeyCode::Q) || is_key_pressed(KeyCode::Escape) {
+        if is_key_pressed(KeyCode::Q) && is_key_down(KeyCode::LeftSuper)
+            || is_key_pressed(KeyCode::Escape)
+        {
             break;
         }
         cart.update(get_frame_time() as f64);
 
         draw_blue_grid(grid, SKYBLUE, 0.001, 3, 0.003);
+
+        if is_key_pressed(KeyCode::RightAlt) {
+            break;
+        }
 
         cart.display(
             // Color::new(0.50, 0.85, 1.00, 1.00),
