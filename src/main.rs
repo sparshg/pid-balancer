@@ -8,8 +8,8 @@ fn window_conf() -> Conf {
         window_title: "Cart".to_string(),
         // fullscreen: true,
         window_resizable: true,
-        // window_width: 600,
-        // window_height: 600,
+        // window_width: 640,
+        // window_height: 360,
         ..Default::default()
     }
 }

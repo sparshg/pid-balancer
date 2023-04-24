@@ -12,7 +12,7 @@ impl State {
     pub fn new() -> Self {
         let x = 0.;
         let v = 0.;
-        let th = std::f64::consts::PI;
+        let th = PI;
         let w = 0.0;
         State { x, v, w, th }
     }
@@ -24,6 +24,7 @@ impl State {
     pub fn update(&mut self, (vdot, v, wdot, w): (f64, f64, f64, f64), dt: f64) {
         self.w += wdot * dt;
         self.th += w * dt;
+        self.th = (self.th % (2. * PI) + 2. * PI) % (2. * PI);
         self.v += vdot * dt;
         self.x += v * dt;
     }

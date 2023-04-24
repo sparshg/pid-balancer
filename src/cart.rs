@@ -28,7 +28,7 @@ pub struct Cart {
 
 impl Cart {
     pub fn new() -> Self {
-        let (M, m, ml, mw) = (50., 10., 1., 10.);
+        let (M, m, ml, mw) = (3., 0.5, 1., 1.);
         let m1 = m + M + ml + 3. * mw;
         let m2 = m + ml / 3.;
         let m3 = m + ml / 2.;
@@ -37,30 +37,33 @@ impl Cart {
             m,
             M,
             l: 300.,
-            g: 1000.,
+            g: 3000.,
             F: 0.,
             int: 0.,
             R: 30.,
             r: 30.,
-            state: State::from(0.0, 0.0, 0.0, PI + 0.4),
-            b1: 10.,
-            b2: 5.,
+            state: State::from(0.0, 0.0, 0.0, PI + 0.5),
+            b1: 0.,
+            b2: 0.,
             m1,
             m2,
             m3,
             mw,
-            camera: CameraDynamics::new(1., 0.8, 0., 0.0),
+            camera: CameraDynamics::new(1.5, 0.75, 0., 0.0),
         }
     }
 
     pub fn update(&mut self, dt: f64) {
         let error = PI - self.state.th;
         self.int += error * dt;
-        self.F = 1000. * (error * 450.0 - self.state.w * 90.0 + self.int * 200.);
+        self.F = 0.;
+        self.F = 1000. * (error * 60.0 - self.state.w * 10.0 + self.int * 40.);
         if is_key_down(KeyCode::Left) {
-            self.F = -10000.;
+            self.F = -1000.;
+            self.int = 0.
         } else if is_key_down(KeyCode::Right) {
-            self.F = 10000.;
+            self.F = 1000.;
+            self.int = 0.
         }
         self.camera.update(self.state.x, self.state.v, dt);
 
@@ -104,6 +107,19 @@ impl Cart {
         )
     }
 
+    fn get_potential_energy(&self) -> f64 {
+        // with respect to ground
+        -self.m3 * self.g * self.l * self.state.th.cos()
+    }
+    fn get_kinetic_energy(&self) -> f64 {
+        0.5 * self.m1 * self.state.v * self.state.v
+            + 0.5 * self.m2 * self.state.w * self.state.w * self.l * self.l
+            + self.m3 * self.state.v * self.state.w * self.l * self.state.th.cos()
+    }
+    fn get_total_energy(&self) -> f64 {
+        self.get_potential_energy() + self.get_kinetic_energy()
+    }
+
     pub fn display(&self, color: Color, thickness: f32, length: f32, depth: f32, w: f32, h: f32) {
         draw_line(-length, -depth, length, -depth, thickness, color);
 
@@ -121,7 +137,7 @@ impl Cart {
         for i in 0..ticks + 2 {
             draw_line(
                 (-offset + gap * i as f32 - 1.) * length,
-                -depth - 0.001,
+                -depth - 0.002,
                 (-offset + gap * i as f32 - 1.) * length - 0.03,
                 -depth - 0.03,
                 thickness,
