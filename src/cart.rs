@@ -54,22 +54,21 @@ impl Cart {
     }
 
     pub fn update(&mut self, dt: f64) {
-        let error = PI - self.state.th;
-        self.int += error * dt;
-        self.F = 0.;
-        self.F = 1000. * (error * 60.0 - self.state.w * 10.0 + self.int * 40.);
-        if is_key_down(KeyCode::Left) {
-            self.F = -1000.;
-            self.int = 0.
-        } else if is_key_down(KeyCode::Right) {
-            self.F = 1000.;
-            self.int = 0.
-        }
         self.camera.update(self.state.x, self.state.v, dt);
-
-        let steps = 10;
+        // println!("{} \t {} ", dt, get_time());
+        let steps = if dt > 0.02 { (60. * dt) as i32 } else { 5 };
         let dt = dt / steps as f64;
         for _ in 0..steps {
+            let error = PI - self.state.th;
+            self.int += error * dt;
+            self.F = 1000. * (error * 60.0 - self.state.w * 10.0 + self.int * 40.);
+            if is_key_down(KeyCode::Left) {
+                self.F = -1000.;
+                self.int = 0.
+            } else if is_key_down(KeyCode::Right) {
+                self.F = 1000.;
+                self.int = 0.
+            }
             let k1 = self.process_state(self.state);
             let k2 = self.process_state(self.state.after(k1, dt * 0.5));
             let k3 = self.process_state(self.state.after(k2, dt * 0.5));

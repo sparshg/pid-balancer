@@ -1,8 +1,12 @@
 use cart::Cart;
+use egui::FontDefinitions;
 use macroquad::prelude::*;
+
+use crate::theme::get_theme;
 mod camera;
 mod cart;
 mod state;
+mod theme;
 fn window_conf() -> Conf {
     Conf {
         window_title: "Cart".to_string(),
@@ -19,18 +23,61 @@ async fn main() {
     let grid = 0.15;
     let vingette = load_texture("vingette2.png").await.unwrap();
 
+    #[derive(PartialEq)]
+    enum Enum {
+        First,
+        Second,
+        Third,
+    }
+    let mut my_f32: f32 = 0.;
+    let mut my_string: String = "Hello World!".to_owned();
+    let mut my_boolean: bool = true;
+    let mut my_enum: Enum = Enum::First;
+
+    egui_macroquad::cfg(|ctx| {
+        get_theme(ctx);
+        let mut fonts = egui::FontDefinitions::default();
+
+        // Install my own font (maybe supporting non-latin characters).
+        // .ttf and .otf files supported.
+        fonts.font_data.insert(
+            "my_font".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                // "../../../../Library/Fonts/Product Sans Regular.ttf"
+                // "../../../../Library/Fonts/FiraCode-Regular.ttf"
+                "../Jost-Regular.ttf"
+            )),
+        );
+
+        // Put my font first (highest priority) for proportional text:
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "my_font".to_owned());
+
+        // Put my font as last fallback for monospace:
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .insert(0, "my_font".to_owned());
+
+        // ctx.set_fonts(fonts);
+    });
+
     loop {
         set_camera(&Camera2D {
             zoom: vec2(1., screen_width() / screen_height()),
             ..Default::default()
         });
         clear_background(BLUE);
-        if is_key_pressed(KeyCode::Q) && is_key_down(KeyCode::LeftSuper)
-            || is_key_pressed(KeyCode::Escape)
-        {
+        if is_key_pressed(KeyCode::Q) || is_key_pressed(KeyCode::Escape) {
             break;
         }
+        // if get_time() > 0. {
         cart.update(get_frame_time() as f64);
+        // }
 
         draw_blue_grid(grid, SKYBLUE, 0.001, 3, 0.003);
 
@@ -60,6 +107,32 @@ async fn main() {
             },
         );
 
+        egui_macroquad::ui(|egui_ctx| {
+            egui::Window::new("egui ❤ macroquad")
+                .resizable(false)
+                .movable(false)
+                .collapsible(false)
+                .title_bar(false)
+                .show(egui_ctx, |ui| {
+                    ui.label("This is a label");
+                    ui.hyperlink("https://github.com/emilk/egui");
+                    ui.text_edit_singleline(&mut my_string);
+                    if ui.button("Click me").clicked() {}
+                    ui.add(egui::Slider::new(&mut my_f32, 0.0..=100.0));
+                    ui.add(egui::DragValue::new(&mut my_f32));
+
+                    ui.checkbox(&mut my_boolean, "Checkbox");
+
+                    ui.horizontal(|ui| {
+                        ui.radio_value(&mut my_enum, Enum::First, "First");
+                        ui.radio_value(&mut my_enum, Enum::Second, "Second");
+                        ui.radio_value(&mut my_enum, Enum::Third, "Third");
+                    });
+
+                    ui.separator();
+                });
+        });
+        egui_macroquad::draw();
         next_frame().await;
     }
 

@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-macroquad = { git="https://github.com/not-fl3/macroquad.git", rev="f5bab92" }
+egui = "0.21.0"
+egui-macroquad = "0.15.0"
+macroquad = "0.3.25"
