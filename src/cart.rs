@@ -4,14 +4,16 @@ use std::f64::consts::PI;
 
 use macroquad::prelude::*;
 
+use crate::camera::CameraDynamics;
 use crate::state::State;
+
 pub struct Cart {
+    pub F: f64,
     m: f64,
     M: f64,
     int: f64,
     l: f64,
     g: f64,
-    pub F: f64,
     state: State,
     R: f64,
     r: f64,
@@ -21,19 +23,12 @@ pub struct Cart {
     mw: f64,
     b1: f64,
     b2: f64,
+    camera: CameraDynamics,
 }
 
 impl Cart {
     pub fn new() -> Self {
         let (M, m, ml, mw) = (50., 10., 1., 10.);
-        let l = 300.0;
-        let g = 1000.;
-        let F = 0.0;
-        let int = 0.0;
-        let state = State::from(0.0, 0.0, 0.0, std::f64::consts::PI + 0.4);
-        let R = 30.0;
-        let r = 30.0;
-        let (b1, b2) = (10., 5.);
         let m1 = m + M + ml + 3. * mw;
         let m2 = m + ml / 3.;
         let m3 = m + ml / 2.;
@@ -41,33 +36,35 @@ impl Cart {
         Cart {
             m,
             M,
-            l,
-            g,
-            F,
-            int,
-            R,
-            r,
-            state,
-            b1,
-            b2,
+            l: 300.,
+            g: 1000.,
+            F: 0.,
+            int: 0.,
+            R: 30.,
+            r: 30.,
+            state: State::from(0.0, 0.0, 0.0, PI + 0.4),
+            b1: 10.,
+            b2: 5.,
             m1,
             m2,
             m3,
             mw,
+            camera: CameraDynamics::new(1., 0.8, 0., 0.0),
         }
     }
 
     pub fn update(&mut self, dt: f64) {
         let error = PI - self.state.th;
         self.int += error * dt;
-        self.F = 1000. * (error * 350.0 - self.state.w * 100.0 + self.int * 200.);
+        self.F = 1000. * (error * 450.0 - self.state.w * 90.0 + self.int * 200.);
         if is_key_down(KeyCode::Left) {
             self.F = -10000.;
         } else if is_key_down(KeyCode::Right) {
             self.F = 10000.;
         }
+        self.camera.update(self.state.x, self.state.v, dt);
 
-        let steps = 1;
+        let steps = 10;
         let dt = dt / steps as f64;
         for _ in 0..steps {
             let k1 = self.process_state(self.state);
@@ -111,13 +108,7 @@ impl Cart {
         draw_line(-length, -depth, length, -depth, thickness, color);
 
         let scale = 0.001;
-        let mut x = 0.;
-        // let mut x = self.state.x as f32 * scale;
-        // if x + w * 0.5 > length {
-        //     x = length - w * 0.5;
-        // } else if x - w * 0.5 < -length {
-        //     x = -length + w * 0.5;
-        // }
+        let x = (self.state.x - self.camera.y) as f32 * scale;
         let R = self.R as f32 * scale;
         let (c, s) = (
             (self.state.x / self.R).cos() as f32,
@@ -126,7 +117,7 @@ impl Cart {
 
         let ticks = 30;
         let gap = 2. / ticks as f32;
-        let offset = self.state.x as f32 * scale % gap;
+        let offset = (self.camera.y as f32 * scale) % gap;
         for i in 0..ticks + 2 {
             draw_line(
                 (-offset + gap * i as f32 - 1.) * length,

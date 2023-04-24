@@ -1,5 +1,6 @@
 use cart::Cart;
 use macroquad::prelude::*;
+mod camera;
 mod cart;
 mod state;
 fn window_conf() -> Conf {
