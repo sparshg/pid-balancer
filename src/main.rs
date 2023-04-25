@@ -1,54 +1,43 @@
+use std::f64::consts::PI;
+
 use cart::Cart;
-use egui::Align2;
+use egui::{Align, Align2, Color32, Layout, Pos2};
 use macroquad::prelude::*;
 
-use crate::theme::get_theme;
+use crate::{theme::setup_theme, ui::Graph};
 mod camera;
 mod cart;
 mod state;
 mod theme;
+mod ui;
+
 fn window_conf() -> Conf {
     Conf {
         window_title: "Cart".to_string(),
         // fullscreen: true,
-        window_resizable: false,
-        window_width: 640,
-        window_height: 400,
+        // window_resizable: false,
+        window_width: 1280,
+        window_height: 720,
         ..Default::default()
     }
 }
 #[macroquad::main(window_conf)]
 async fn main() {
-    let mut cart = Cart::new();
     let grid = 0.15;
+    let mut cart = Cart::new();
     let vingette = load_texture("vingette2.png").await.unwrap();
+    setup_theme();
+    next_frame().await;
+    let w_init = screen_width();
 
-    egui_macroquad::cfg(|ctx| {
-        get_theme(ctx);
-        let mut fonts = egui::FontDefinitions::default();
-
-        // Install my own font (maybe supporting non-latin characters).
-        // .ttf and .otf files supported.
-        fonts.font_data.insert(
-            "my_font".to_owned(),
-            egui::FontData::from_static(include_bytes!(
-                // "../../../../Library/Fonts/Product Sans Regular.ttf"
-                // "../../../../Library/Fonts/FiraCode-Regular.ttf"
-                "../Jost-Regular.ttf"
-            )),
-        );
-        fonts
-            .families
-            .entry(egui::FontFamily::Proportional)
-            .or_default()
-            .insert(0, "my_font".to_owned());
-        fonts
-            .families
-            .entry(egui::FontFamily::Monospace)
-            .or_default()
-            .insert(0, "my_font".to_owned());
-        // ctx.set_fonts(fonts);
-    });
+    let mut forceplt = Graph::new(&["Force", "Thrust"], [-4., 3.5], grid, [3., 2.], None);
+    let mut forceplt1 = Graph::new(
+        &["PID", "Integral", "Derivative", "Error"],
+        [1., 3.5],
+        grid,
+        [3., 2.],
+        Some([Color32::WHITE, Color32::LIGHT_GREEN, Color32::LIGHT_RED].to_vec()),
+    );
 
     loop {
         set_camera(&Camera2D {
@@ -59,9 +48,11 @@ async fn main() {
         if is_key_pressed(KeyCode::Q) || is_key_pressed(KeyCode::Escape) {
             break;
         }
-        // if get_time() > 0. {
-        cart.update(get_frame_time() as f64);
-        // }
+        if get_time() > 0. {
+            cart.update(get_frame_time() as f64);
+        }
+        forceplt.update([cart.F].to_vec());
+        forceplt1.update([cart.int, -cart.state.w, cart.error].to_vec());
 
         draw_blue_grid(grid, SKYBLUE, 0.001, 3, 0.003);
 
@@ -74,38 +65,37 @@ async fn main() {
             0.3,
             0.12,
         );
-        draw_ui(&mut cart.pid);
+        draw_ui(w_init, &mut cart, &mut forceplt, &mut forceplt1);
         draw_vingette(vingette);
         next_frame().await;
     }
 
-    fn draw_ui(pid: &mut (f64, f64, f64)) {
-        // spawn window aligned to right edge
+    fn draw_ui(w: f32, cart: &mut Cart, forceplt: &mut Graph, forceplt1: &mut Graph) {
         egui_macroquad::ui(|ctx| {
-            ctx.set_pixels_per_point(screen_width() / 720.);
-            egui::Window::new("egui ❤ macroquad")
-                // .auto_sized()
+            ctx.set_pixels_per_point(screen_width() / w);
+            forceplt.scale_pos(screen_width() / w);
+            forceplt1.scale_pos(screen_width() / w);
+            egui::Window::new("Controls")
                 .anchor(Align2::RIGHT_TOP, egui::emath::vec2(-0., 0.))
                 .resizable(false)
                 .movable(false)
                 .collapsible(false)
                 .title_bar(false)
                 .show(ctx, |ui| {
-                    ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
-                        ui.label("This is a label");
-                        // ui.widt();
-                        if ui.button("Click me").clicked() {}
+                    ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
                         ui.horizontal(|ui| {
-                            ui.add(egui::Slider::new(&mut pid.0, 0.0..=100.0).text("P"));
+                            ui.add(egui::Slider::new(&mut cart.pid.0, 0.0..=100.0).text("P"));
                         });
                         ui.horizontal(|ui| {
-                            ui.add(egui::Slider::new(&mut pid.1, 0.0..=100.0).text("I"));
+                            ui.add(egui::Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
                         });
                         ui.horizontal(|ui| {
-                            ui.add(egui::Slider::new(&mut pid.2, 0.0..=100.0).text("D"));
+                            ui.add(egui::Slider::new(&mut cart.pid.2, 0.0..=100.0).text("D"));
                         });
                     });
                 });
+            forceplt.draw(ctx, cart.Fclamp);
+            forceplt1.draw(ctx, 9.);
         });
         egui_macroquad::draw();
     }

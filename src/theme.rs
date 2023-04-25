@@ -1,6 +1,32 @@
 use egui::{epaint, style, Color32, Context, Rounding};
 
-pub fn get_theme(ctx: &Context) {
+pub fn setup_theme() {
+    egui_macroquad::cfg(|ctx| {
+        get_theme(ctx);
+        let mut fonts = egui::FontDefinitions::default();
+        fonts.font_data.insert(
+            "my_font".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                // "../../../../Library/Fonts/Product Sans Regular.ttf"
+                // "../../../../Library/Fonts/FiraCode-Regular.ttf"
+                "../Jost-Regular.ttf"
+            )),
+        );
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "my_font".to_owned());
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .insert(0, "my_font".to_owned());
+        // ctx.set_fonts(fonts);
+    });
+}
+
+fn get_theme(ctx: &Context) {
     let bg = Color32::from_black_alpha(30);
     let act = style::WidgetVisuals {
         bg_fill: bg,
@@ -27,7 +53,6 @@ pub fn get_theme(ctx: &Context) {
     };
     ctx.set_visuals(egui::Visuals {
         dark_mode: false,
-
         window_shadow: epaint::Shadow::NONE,
         panel_fill: Color32::TRANSPARENT,
         window_fill: Color32::TRANSPARENT,

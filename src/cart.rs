@@ -9,13 +9,15 @@ use crate::state::State;
 
 pub struct Cart {
     pub F: f64,
+    pub Fclamp: f64,
     pub pid: (f64, f64, f64),
+    pub error: f64,
+    pub int: f64,
+    pub state: State,
     m: f64,
     M: f64,
-    int: f64,
     l: f64,
     g: f64,
-    state: State,
     R: f64,
     r: f64,
     m1: f64,
@@ -40,7 +42,9 @@ impl Cart {
             l: 300.,
             g: 3000.,
             F: 0.,
+            Fclamp: 30000.,
             int: 0.,
+            error: 0.,
             R: 30.,
             r: 30.,
             state: State::from(0.0, 0.0, 0.0, PI + 0.5),
@@ -61,17 +65,17 @@ impl Cart {
         let steps = if dt > 0.02 { (60. * dt) as i32 } else { 5 };
         let dt = dt / steps as f64;
         for _ in 0..steps {
-            let error = PI - self.state.th;
-            self.int += error * dt;
-            self.F = 1000.
-                * (error * self.pid.0 - self.state.w * self.pid.1 + self.int * self.pid.2)
-                    .clamp(-30., 30.);
+            self.error = PI - self.state.th;
+            self.int += self.error * dt;
+            self.F = (1000.
+                * (self.error * self.pid.0 - self.state.w * self.pid.1 + self.int * self.pid.2))
+                .clamp(-self.Fclamp, self.Fclamp);
             // dbg!(self.F);
             if is_key_down(KeyCode::Left) {
-                self.F = -1000.;
+                self.F = -2000.;
                 self.int = 0.
             } else if is_key_down(KeyCode::Right) {
-                self.F = 1000.;
+                self.F = 2000.;
                 self.int = 0.
             }
             let k1 = self.process_state(self.state);
