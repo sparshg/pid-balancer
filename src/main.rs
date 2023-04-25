@@ -1,5 +1,5 @@
 use cart::Cart;
-use egui::FontDefinitions;
+use egui::Align2;
 use macroquad::prelude::*;
 
 use crate::theme::get_theme;
@@ -11,9 +11,9 @@ fn window_conf() -> Conf {
     Conf {
         window_title: "Cart".to_string(),
         // fullscreen: true,
-        window_resizable: true,
-        // window_width: 640,
-        // window_height: 360,
+        window_resizable: false,
+        window_width: 640,
+        window_height: 400,
         ..Default::default()
     }
 }
@@ -22,17 +22,6 @@ async fn main() {
     let mut cart = Cart::new();
     let grid = 0.15;
     let vingette = load_texture("vingette2.png").await.unwrap();
-
-    #[derive(PartialEq)]
-    enum Enum {
-        First,
-        Second,
-        Third,
-    }
-    let mut my_f32: f32 = 0.;
-    let mut my_string: String = "Hello World!".to_owned();
-    let mut my_boolean: bool = true;
-    let mut my_enum: Enum = Enum::First;
 
     egui_macroquad::cfg(|ctx| {
         get_theme(ctx);
@@ -48,21 +37,16 @@ async fn main() {
                 "../Jost-Regular.ttf"
             )),
         );
-
-        // Put my font first (highest priority) for proportional text:
         fonts
             .families
             .entry(egui::FontFamily::Proportional)
             .or_default()
             .insert(0, "my_font".to_owned());
-
-        // Put my font as last fallback for monospace:
         fonts
             .families
             .entry(egui::FontFamily::Monospace)
             .or_default()
             .insert(0, "my_font".to_owned());
-
         // ctx.set_fonts(fonts);
     });
 
@@ -81,10 +65,6 @@ async fn main() {
 
         draw_blue_grid(grid, SKYBLUE, 0.001, 3, 0.003);
 
-        if is_key_pressed(KeyCode::RightAlt) {
-            break;
-        }
-
         cart.display(
             // Color::new(0.50, 0.85, 1.00, 1.00),
             WHITE,
@@ -94,10 +74,46 @@ async fn main() {
             0.3,
             0.12,
         );
+        draw_ui(&mut cart.pid);
+        draw_vingette(vingette);
+        next_frame().await;
+    }
 
+    fn draw_ui(pid: &mut (f64, f64, f64)) {
+        // spawn window aligned to right edge
+        egui_macroquad::ui(|ctx| {
+            ctx.set_pixels_per_point(screen_width() / 720.);
+            egui::Window::new("egui ❤ macroquad")
+                // .auto_sized()
+                .anchor(Align2::RIGHT_TOP, egui::emath::vec2(-0., 0.))
+                .resizable(false)
+                .movable(false)
+                .collapsible(false)
+                .title_bar(false)
+                .show(ctx, |ui| {
+                    ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
+                        ui.label("This is a label");
+                        // ui.widt();
+                        if ui.button("Click me").clicked() {}
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut pid.0, 0.0..=100.0).text("P"));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut pid.1, 0.0..=100.0).text("I"));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut pid.2, 0.0..=100.0).text("D"));
+                        });
+                    });
+                });
+        });
+        egui_macroquad::draw();
+    }
+
+    fn draw_vingette(tex: Texture2D) {
         set_default_camera();
         draw_texture_ex(
-            vingette,
+            tex,
             0.,
             0.,
             WHITE,
@@ -106,34 +122,6 @@ async fn main() {
                 ..Default::default()
             },
         );
-
-        egui_macroquad::ui(|egui_ctx| {
-            egui::Window::new("egui ❤ macroquad")
-                .resizable(false)
-                .movable(false)
-                .collapsible(false)
-                .title_bar(false)
-                .show(egui_ctx, |ui| {
-                    ui.label("This is a label");
-                    ui.hyperlink("https://github.com/emilk/egui");
-                    ui.text_edit_singleline(&mut my_string);
-                    if ui.button("Click me").clicked() {}
-                    ui.add(egui::Slider::new(&mut my_f32, 0.0..=100.0));
-                    ui.add(egui::DragValue::new(&mut my_f32));
-
-                    ui.checkbox(&mut my_boolean, "Checkbox");
-
-                    ui.horizontal(|ui| {
-                        ui.radio_value(&mut my_enum, Enum::First, "First");
-                        ui.radio_value(&mut my_enum, Enum::Second, "Second");
-                        ui.radio_value(&mut my_enum, Enum::Third, "Third");
-                    });
-
-                    ui.separator();
-                });
-        });
-        egui_macroquad::draw();
-        next_frame().await;
     }
 
     fn draw_blue_grid(grid: f32, color: Color, thickness: f32, bold_every: i32, bold_thick: f32) {

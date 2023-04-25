@@ -44,4 +44,5 @@ pub fn get_theme(ctx: &Context) {
         },
         ..Default::default()
     });
+    // ctx.set_visuals(style::Visuals::dark());
 }

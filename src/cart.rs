@@ -9,6 +9,7 @@ use crate::state::State;
 
 pub struct Cart {
     pub F: f64,
+    pub pid: (f64, f64, f64),
     m: f64,
     M: f64,
     int: f64,
@@ -43,25 +44,29 @@ impl Cart {
             R: 30.,
             r: 30.,
             state: State::from(0.0, 0.0, 0.0, PI + 0.5),
-            b1: 0.,
-            b2: 0.,
+            b1: 0.2,
+            b2: 0.1,
             m1,
             m2,
             m3,
             mw,
-            camera: CameraDynamics::new(1.5, 0.75, 0., 0.0),
+            // pid: (60., 10., 40.),
+            pid: (50., 3., 5.),
+            camera: CameraDynamics::new(1.2, 0.75, 0., 0.0),
         }
     }
 
     pub fn update(&mut self, dt: f64) {
         self.camera.update(self.state.x, self.state.v, dt);
-        // println!("{} \t {} ", dt, get_time());
         let steps = if dt > 0.02 { (60. * dt) as i32 } else { 5 };
         let dt = dt / steps as f64;
         for _ in 0..steps {
             let error = PI - self.state.th;
             self.int += error * dt;
-            self.F = 1000. * (error * 60.0 - self.state.w * 10.0 + self.int * 40.);
+            self.F = 1000.
+                * (error * self.pid.0 - self.state.w * self.pid.1 + self.int * self.pid.2)
+                    .clamp(-30., 30.);
+            // dbg!(self.F);
             if is_key_down(KeyCode::Left) {
                 self.F = -1000.;
                 self.int = 0.
