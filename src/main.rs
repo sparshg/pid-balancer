@@ -1,10 +1,8 @@
-use std::f64::consts::PI;
-
-use cart::Cart;
-use egui::{Align, Align2, Color32, Layout, Pos2};
-use macroquad::prelude::*;
-
 use crate::{theme::setup_theme, ui::Graph};
+use cart::Cart;
+use egui::{Align, Align2, Color32, Layout};
+use macroquad::prelude::*;
+use ui::{draw_blue_grid, draw_speedometer, draw_vingette};
 mod camera;
 mod cart;
 mod state;
@@ -26,6 +24,7 @@ async fn main() {
     let grid = 0.15;
     let mut cart = Cart::new();
     let vingette = load_texture("vingette2.png").await.unwrap();
+    let font = load_ttf_font("Ubuntu-Regular.ttf").await.unwrap();
     setup_theme();
     next_frame().await;
     let w_init = screen_width();
@@ -56,91 +55,69 @@ async fn main() {
 
         draw_blue_grid(grid, SKYBLUE, 0.001, 3, 0.003);
 
-        cart.display(
-            // Color::new(0.50, 0.85, 1.00, 1.00),
-            WHITE,
-            0.006,
-            6. * grid,
-            3. * grid,
-            0.3,
-            0.12,
+        cart.display(WHITE, 0.006, 6. * grid, 3. * grid, 0.3, 0.12);
+        draw_speedometer(
+            "Angular Velocity",
+            vec2(0., 2.75 * grid),
+            0.08,
+            cart.state.w as f32,
+            10.,
+            0.8,
+            font,
+            12.,
+            false,
+        );
+        draw_speedometer(
+            &format!(
+                "Cart Velocity ({})",
+                if cart.state.v.is_sign_negative() {
+                    "-"
+                } else {
+                    "+"
+                }
+            ),
+            vec2(0., 1.75 * grid),
+            0.08,
+            cart.state.v as f32,
+            5000.,
+            0.8,
+            font,
+            12.,
+            true,
         );
         draw_ui(w_init, &mut cart, &mut forceplt, &mut forceplt1);
         draw_vingette(vingette);
         next_frame().await;
     }
+}
 
-    fn draw_ui(w: f32, cart: &mut Cart, forceplt: &mut Graph, forceplt1: &mut Graph) {
-        egui_macroquad::ui(|ctx| {
-            ctx.set_pixels_per_point(screen_width() / w);
-            forceplt.scale_pos(screen_width() / w);
-            forceplt1.scale_pos(screen_width() / w);
-            egui::Window::new("Controls")
-                .anchor(Align2::RIGHT_TOP, egui::emath::vec2(-0., 0.))
-                .resizable(false)
-                .movable(false)
-                .collapsible(false)
-                .title_bar(false)
-                .show(ctx, |ui| {
-                    ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
-                        ui.horizontal(|ui| {
-                            ui.add(egui::Slider::new(&mut cart.pid.0, 0.0..=100.0).text("P"));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.add(egui::Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.add(egui::Slider::new(&mut cart.pid.2, 0.0..=100.0).text("D"));
-                        });
+fn draw_ui(w: f32, cart: &mut Cart, forceplt: &mut Graph, forceplt1: &mut Graph) {
+    egui_macroquad::ui(|ctx| {
+        ctx.set_pixels_per_point(screen_width() / w);
+        forceplt.scale_pos(screen_width() / w);
+        forceplt1.scale_pos(screen_width() / w);
+        egui::Window::new("Controls")
+            .anchor(Align2::RIGHT_TOP, egui::emath::vec2(0., 0.))
+            .resizable(false)
+            .movable(false)
+            .collapsible(false)
+            .title_bar(false)
+            .show(ctx, |ui| {
+                ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
+                    ui.horizontal(|ui| {
+                        ui.add(egui::Slider::new(&mut cart.pid.0, 0.0..=100.0).text("P"));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.add(egui::Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.add(egui::Slider::new(&mut cart.pid.2, 0.0..=100.0).text("D"));
                     });
                 });
-            forceplt.draw(ctx, cart.Fclamp);
-            forceplt1.draw(ctx, 9.);
-        });
-        egui_macroquad::draw();
-    }
+            });
 
-    fn draw_vingette(tex: Texture2D) {
-        set_default_camera();
-        draw_texture_ex(
-            tex,
-            0.,
-            0.,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(screen_width(), screen_height())),
-                ..Default::default()
-            },
-        );
-    }
-
-    fn draw_blue_grid(grid: f32, color: Color, thickness: f32, bold_every: i32, bold_thick: f32) {
-        draw_line(0., -1., 0., 1., bold_thick, color);
-        draw_line(-1., 0., 1., 0., bold_thick, color);
-        for i in 1..=(1. / grid as f32) as i32 {
-            let thickness = if i % bold_every == 0 {
-                bold_thick
-            } else {
-                thickness
-            };
-            draw_line(i as f32 * grid, -1., i as f32 * grid, 1., thickness, color);
-            draw_line(
-                -i as f32 * grid,
-                -1.,
-                -i as f32 * grid,
-                1.,
-                thickness,
-                color,
-            );
-            draw_line(-1., i as f32 * grid, 1., i as f32 * grid, thickness, color);
-            draw_line(
-                -1.,
-                -i as f32 * grid,
-                1.,
-                -i as f32 * grid,
-                thickness,
-                color,
-            );
-        }
-    }
+        forceplt.draw(ctx, cart.Fclamp);
+        forceplt1.draw(ctx, 9.);
+    });
+    egui_macroquad::draw();
 }
