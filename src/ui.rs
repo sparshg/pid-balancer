@@ -10,9 +10,7 @@ use macroquad::prelude::*;
 pub struct Graph {
     title: &'static [&'static str],
     pos: Pos2,
-    grid_pos: [f32; 2],
     size: Vec2,
-    grid: f32,
     history: Vec<VecDeque<f32>>,
     hsize: usize,
     colors: Vec<Color32>,
@@ -31,7 +29,6 @@ impl Graph {
         }
         Graph {
             title: title,
-            grid_pos: pos,
             pos: Pos2 {
                 x: (0.5 + 0.5 * pos[0] * grid) * screen_width(),
                 y: 0.5 * screen_height() - 0.5 * pos[1] * grid * screen_width(),
@@ -40,7 +37,6 @@ impl Graph {
                 0.5 * size[0] * grid * screen_width(),
                 0.5 * size[1] * grid * screen_width(),
             ),
-            grid,
             history: (0..title.len() - 1).map(|_| VecDeque::new()).collect(),
             hsize: 100,
             colors: colors
@@ -178,7 +174,7 @@ pub fn draw_speedometer(
     let size = measure_text(label, None, fsize as u16, 1.);
     draw_text_ex(
         label,
-        (0.5 + center.x - 0. * radius) * screen_width() - size.width * 0.5,
+        (0.5 + center.x) * screen_width() - size.width * 0.5,
         0.5 * (screen_height() - center.y * screen_width()) + size.offset_y + size.height,
         TextParams {
             font: font,

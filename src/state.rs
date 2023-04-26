@@ -1,6 +1,7 @@
 use std::f64::consts::PI;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
+
 pub struct State {
     pub x: f64,
     pub v: f64,

@@ -1,6 +1,6 @@
 use crate::{theme::setup_theme, ui::Graph};
 use cart::Cart;
-use egui::{Align, Align2, Color32, Layout};
+use egui::{Align, Align2, Color32, DragValue, Layout, Slider};
 use macroquad::prelude::*;
 use ui::{draw_blue_grid, draw_speedometer, draw_vingette};
 mod camera;
@@ -22,7 +22,7 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf)]
 async fn main() {
     let grid = 0.15;
-    let mut cart = Cart::new();
+    let mut cart = Cart::default();
     let vingette = load_texture("vingette2.png").await.unwrap();
     let font = load_ttf_font("Ubuntu-Regular.ttf").await.unwrap();
     setup_theme();
@@ -55,7 +55,7 @@ async fn main() {
 
         draw_blue_grid(grid, SKYBLUE, 0.001, 3, 0.003);
 
-        cart.display(WHITE, 0.006, 6. * grid, 3. * grid, 0.3, 0.12);
+        cart.display(WHITE, 0.006, 6. * grid, 3. * grid);
         draw_speedometer(
             "Angular Velocity",
             vec2(0., 2.75 * grid),
@@ -79,7 +79,7 @@ async fn main() {
             vec2(0., 1.75 * grid),
             0.08,
             cart.state.v as f32,
-            5000.,
+            cart.Fclamp as f32 * 0.5,
             0.8,
             font,
             12.,
@@ -106,16 +106,47 @@ fn draw_ui(
         forceplt1.y(top);
         egui::Window::new("Controls")
             .anchor(Align2::RIGHT_TOP, egui::emath::vec2(0., top))
+            .default_width(1.25 * grid * screen_width())
             .resizable(false)
             .movable(false)
             .collapsible(false)
-            .title_bar(false)
+            .pivot(Align2::RIGHT_TOP)
+            // .title_bar(false)
             .show(ctx, |ui| {
                 ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
-                    ui.add(egui::Slider::new(&mut cart.pid.0, 0.0..=100.0).text("P"));
-                    ui.add(egui::Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
-                    ui.add(egui::Slider::new(&mut cart.pid.2, 0.0..=100.0).text("D"));
+                    ui.add(Slider::new(&mut cart.pid.0, 0.0..=150.0).text("P"));
+                    ui.add(Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
+                    ui.add(Slider::new(&mut cart.pid.2, 0.0..=40.0).text("D"));
                 });
+                // ui.with_layout(Layout::top_down(Align::LEFT), |ui| {
+                egui::Grid::new("controlgrid").show(ui, |ui| {
+                    ui.add(DragValue::new(&mut cart.M));
+                    ui.label("M_cart");
+                    ui.add(DragValue::new(&mut cart.m));
+                    ui.label("M_bob");
+                    ui.end_row();
+                    ui.add(DragValue::new(&mut cart.ml));
+                    ui.label("M_rod");
+                    ui.add(DragValue::new(&mut cart.mw));
+                    ui.label("M_wheel");
+                    ui.end_row();
+                    ui.add(DragValue::new(&mut cart.b1));
+                    ui.label("Drag");
+                    ui.add(DragValue::new(&mut cart.b2));
+                    ui.label("Ang_Drag");
+                    ui.end_row();
+                    ui.add(DragValue::new(&mut cart.l));
+                    ui.label("L_rod");
+                    ui.add(DragValue::new(&mut cart.R));
+                    ui.label("R_wheel");
+                    ui.end_row();
+                    ui.add(DragValue::new(&mut cart.Fclamp));
+                    ui.label("F_clamp");
+                    ui.add(DragValue::new(&mut cart.Finp));
+                    ui.label("F_inp");
+                    ui.end_row();
+                });
+                // });
             });
 
         egui::Window::new("Physics")
@@ -132,16 +163,36 @@ fn draw_ui(
                         "Potential Energy: {:.2}",
                         cart.get_potential_energy()
                     ));
-                    ui.selectable_value(&mut cart.integrator, cart::Integrator::Euler, "Euler");
-                    ui.selectable_value(
-                        &mut cart.integrator,
-                        cart::Integrator::RungeKutta4,
-                        "Runge-Kutta⁴",
+                    ui.horizontal(|ui| {
+                        ui.label("Integrator: ");
+                        ui.selectable_value(&mut cart.integrator, cart::Integrator::Euler, "Euler");
+                        ui.selectable_value(
+                            &mut cart.integrator,
+                            cart::Integrator::RungeKutta4,
+                            "Runge-Kutta⁴",
+                        );
+                    });
+                    ui.add(Slider::new(&mut cart.steps, 1..=100).text("Steps per Frame"));
+                    ui.add(
+                        //0.1-2 == 0.03-0.6
+                        Slider::new(&mut cart.ui_scale, 0.03..=0.6)
+                            .custom_formatter(|n, _| format!("{:.2}", n / 0.3))
+                            .custom_parser(|s| s.parse::<f64>().map(|v| v * 0.3).ok())
+                            .text("Scale"),
                     );
-                    ui.add(egui::Slider::new(&mut cart.steps, 1..=100).text("Steps per Frame"));
+                    let enable = cart.enable;
+                    ui.toggle_value(
+                        &mut cart.enable,
+                        if enable {
+                            "Controller: ON"
+                        } else {
+                            "Controller: OFF"
+                        },
+                    );
+                    egui::reset_button(ui, cart);
                 });
             });
-
+        // more physics stuff
         forceplt.draw(ctx, cart.Fclamp);
         forceplt1.draw(ctx, 9.);
     });

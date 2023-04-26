@@ -18,33 +18,38 @@ impl Default for Integrator {
     }
 }
 
+#[derive(PartialEq)]
 pub struct Cart {
     pub F: f64,
     pub Fclamp: f64,
+    pub Finp: f64,
+    pub ui_scale: f32,
+    pub enable: bool,
     pub pid: (f64, f64, f64),
     pub error: f64,
     pub int: f64,
     pub state: State,
     pub integrator: Integrator,
     pub steps: i32,
-    m: f64,
-    M: f64,
-    l: f64,
+    pub m: f64,
+    pub M: f64,
+    pub mw: f64,
+    pub ml: f64,
+    pub l: f64,
+    pub b1: f64,
+    pub b2: f64,
+    pub R: f64,
     g: f64,
-    R: f64,
     r: f64,
     m1: f64,
     m2: f64,
     m3: f64,
-    mw: f64,
-    b1: f64,
-    b2: f64,
     camera: CameraDynamics,
 }
 
-impl Cart {
-    pub fn new() -> Self {
-        let (M, m, ml, mw) = (3., 0.5, 1., 1.);
+impl Default for Cart {
+    fn default() -> Self {
+        let (M, m, ml, mw) = (5., 0.5, 1., 1.);
         let m1 = m + M + ml + 3. * mw;
         let m2 = m + ml / 3.;
         let m3 = m + ml / 2.;
@@ -52,28 +57,34 @@ impl Cart {
         Cart {
             m,
             M,
-            l: 300.,
-            g: 3000.,
+            l: 1.,
+            g: 9.80665,
             F: 0.,
-            Fclamp: 30000.,
+            Fclamp: 100.,
+            Finp: 20.,
             int: 0.,
             error: 0.,
-            R: 30.,
-            r: 30.,
+            R: 0.1,
+            r: 0.1,
             state: State::from(0.0, 0.0, 0.0, PI + 0.5),
-            b1: 0.2,
-            b2: 0.1,
+            b1: 0.01,
+            b2: 0.005,
+            ui_scale: 0.3,
+            mw,
+            ml,
             m1,
             m2,
             m3,
-            mw,
             pid: (50., 3., 5.),
             steps: 5,
+            enable: true,
             camera: CameraDynamics::new(1.2, 0.75, 0., 0.0),
             integrator: Integrator::default(),
         }
     }
+}
 
+impl Cart {
     pub fn update(&mut self, dt: f64) {
         self.camera.update(self.state.x, self.state.v, dt);
         let steps = if dt > 0.02 {
@@ -85,14 +96,17 @@ impl Cart {
         for _ in 0..steps {
             self.error = PI - self.state.th;
             self.int += self.error * dt;
-            self.F = (1000.
-                * (self.error * self.pid.0 - self.state.w * self.pid.1 + self.int * self.pid.2))
-                .clamp(-self.Fclamp, self.Fclamp);
+            if self.enable {
+                self.F = (100.
+                    * (self.error * self.pid.0 - self.state.w * self.pid.1
+                        + self.int * self.pid.2))
+                    .clamp(-self.Fclamp, self.Fclamp);
+            }
             if is_key_down(KeyCode::Left) {
-                self.F = -2000.;
+                self.F = -self.Finp;
                 self.int = 0.
             } else if is_key_down(KeyCode::Right) {
-                self.F = 2000.;
+                self.F = self.Finp;
                 self.int = 0.
             }
             let k1 = self.process_state(self.state);
@@ -149,38 +163,44 @@ impl Cart {
         self.get_potential_energy() + self.get_kinetic_energy()
     }
 
-    pub fn display(&self, color: Color, thickness: f32, length: f32, depth: f32, w: f32, h: f32) {
+    pub fn display(&self, color: Color, thickness: f32, length: f32, depth: f32) {
         draw_line(-length, -depth, length, -depth, thickness, color);
-
-        let scale = 0.001;
-        let x = (self.state.x - self.camera.y) as f32 * scale;
-        let R = self.R as f32 * scale;
+        let x = (self.state.x - self.camera.y) as f32 * self.ui_scale;
+        let R = self.R as f32 * self.ui_scale;
         let (c, s) = (
             (self.state.x / self.R).cos() as f32,
             (self.state.x / self.R).sin() as f32,
         );
 
-        let ticks = 30;
+        let ticks = (9. / self.ui_scale) as i32;
         let gap = 2. / ticks as f32;
-        let offset = (self.camera.y as f32 * scale) % gap;
+        let offset = (self.camera.y as f32 * self.ui_scale) % gap;
         for i in 0..ticks + 2 {
             draw_line(
                 (-offset + gap * i as f32 - 1.) * length,
                 -depth - 0.002,
-                (-offset + gap * i as f32 - 1.) * length - 0.03,
-                -depth - 0.03,
+                (-offset + gap * i as f32 - 1.) * length - 0.1 * self.ui_scale,
+                -depth - 0.1 * self.ui_scale,
                 thickness,
                 color,
             );
         }
-        draw_rectangle(-1., -depth - 0.001, 1. - length - 0.003, -0.04, BLUE);
+        draw_rectangle(
+            -1.,
+            -depth - 0.001,
+            1. - length - 0.003,
+            -0.11 * self.ui_scale,
+            BLUE,
+        );
         draw_rectangle(
             length + 0.003,
             -depth - 0.001,
             1. - length - 0.003,
-            -0.04,
+            -0.11 * self.ui_scale,
             BLUE,
         );
+
+        let (w, h) = (R * 10., R * 3.5);
         // cart
         draw_rectangle_lines(x - 0.5 * w, -depth + 2. * R, w, h, thickness * 2., color);
 
@@ -205,7 +225,7 @@ impl Cart {
         );
 
         let (c, s) = ((self.state.th).cos() as f32, (self.state.th).sin() as f32);
-        let (l, r) = (self.l as f32 * scale, self.r as f32 * scale);
+        let (l, r) = (self.l as f32 * self.ui_scale, self.r as f32 * self.ui_scale);
         // pendulum
         draw_line(
             x,
