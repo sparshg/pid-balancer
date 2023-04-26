@@ -6,6 +6,17 @@ use macroquad::prelude::*;
 
 use crate::camera::CameraDynamics;
 use crate::state::State;
+#[derive(PartialEq, Eq)]
+pub enum Integrator {
+    Euler,
+    RungeKutta4,
+}
+
+impl Default for Integrator {
+    fn default() -> Self {
+        Self::RungeKutta4
+    }
+}
 
 pub struct Cart {
     pub F: f64,
@@ -14,6 +25,8 @@ pub struct Cart {
     pub error: f64,
     pub int: f64,
     pub state: State,
+    pub integrator: Integrator,
+    pub steps: i32,
     m: f64,
     M: f64,
     l: f64,
@@ -54,15 +67,20 @@ impl Cart {
             m2,
             m3,
             mw,
-            // pid: (60., 10., 40.),
             pid: (50., 3., 5.),
+            steps: 5,
             camera: CameraDynamics::new(1.2, 0.75, 0., 0.0),
+            integrator: Integrator::default(),
         }
     }
 
     pub fn update(&mut self, dt: f64) {
         self.camera.update(self.state.x, self.state.v, dt);
-        let steps = if dt > 0.02 { (60. * dt) as i32 } else { 5 };
+        let steps = if dt > 0.02 {
+            (60. * dt) as i32
+        } else {
+            self.steps
+        };
         let dt = dt / steps as f64;
         for _ in 0..steps {
             self.error = PI - self.state.th;
@@ -70,7 +88,6 @@ impl Cart {
             self.F = (1000.
                 * (self.error * self.pid.0 - self.state.w * self.pid.1 + self.int * self.pid.2))
                 .clamp(-self.Fclamp, self.Fclamp);
-            // dbg!(self.F);
             if is_key_down(KeyCode::Left) {
                 self.F = -2000.;
                 self.int = 0.
@@ -79,6 +96,10 @@ impl Cart {
                 self.int = 0.
             }
             let k1 = self.process_state(self.state);
+            if self.integrator == Integrator::Euler {
+                self.state.update(k1, dt);
+                continue;
+            }
             let k2 = self.process_state(self.state.after(k1, dt * 0.5));
             let k3 = self.process_state(self.state.after(k2, dt * 0.5));
             let k4 = self.process_state(self.state.after(k3, dt));
@@ -115,16 +136,16 @@ impl Cart {
         )
     }
 
-    fn get_potential_energy(&self) -> f64 {
+    pub fn get_potential_energy(&self) -> f64 {
         // with respect to ground
         -self.m3 * self.g * self.l * self.state.th.cos()
     }
-    fn get_kinetic_energy(&self) -> f64 {
+    pub fn get_kinetic_energy(&self) -> f64 {
         0.5 * self.m1 * self.state.v * self.state.v
             + 0.5 * self.m2 * self.state.w * self.state.w * self.l * self.l
             + self.m3 * self.state.v * self.state.w * self.l * self.state.th.cos()
     }
-    fn get_total_energy(&self) -> f64 {
+    pub fn get_total_energy(&self) -> f64 {
         self.get_potential_energy() + self.get_kinetic_energy()
     }
 

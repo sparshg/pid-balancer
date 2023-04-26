@@ -48,12 +48,8 @@ impl Graph {
         }
     }
 
-    pub fn scale_pos(&mut self, pixels_per_point: f32) {
-        self.pos = Pos2 {
-            x: self.pos.x,
-            y: (0.5 * screen_height() - 0.5 * self.grid_pos[1] * self.grid * screen_width())
-                / pixels_per_point,
-        };
+    pub fn y(&mut self, y: f32) {
+        self.pos.y = y;
     }
 
     pub fn update(&mut self, track: Vec<f64>) {

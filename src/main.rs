@@ -61,7 +61,7 @@ async fn main() {
             vec2(0., 2.75 * grid),
             0.08,
             cart.state.w as f32,
-            10.,
+            9.,
             0.8,
             font,
             12.,
@@ -85,34 +85,60 @@ async fn main() {
             12.,
             true,
         );
-        draw_ui(w_init, &mut cart, &mut forceplt, &mut forceplt1);
+        draw_ui(w_init, 3.5, grid, &mut cart, &mut forceplt, &mut forceplt1);
         draw_vingette(vingette);
         next_frame().await;
     }
 }
 
-fn draw_ui(w: f32, cart: &mut Cart, forceplt: &mut Graph, forceplt1: &mut Graph) {
+fn draw_ui(
+    w: f32,
+    y_top: f32,
+    grid: f32,
+    cart: &mut Cart,
+    forceplt: &mut Graph,
+    forceplt1: &mut Graph,
+) {
     egui_macroquad::ui(|ctx| {
         ctx.set_pixels_per_point(screen_width() / w);
-        forceplt.scale_pos(screen_width() / w);
-        forceplt1.scale_pos(screen_width() / w);
+        let top = 0.5 * w * (screen_height() / screen_width() - y_top * grid);
+        forceplt.y(top);
+        forceplt1.y(top);
         egui::Window::new("Controls")
-            .anchor(Align2::RIGHT_TOP, egui::emath::vec2(0., 0.))
+            .anchor(Align2::RIGHT_TOP, egui::emath::vec2(0., top))
             .resizable(false)
             .movable(false)
             .collapsible(false)
             .title_bar(false)
             .show(ctx, |ui| {
                 ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
-                    ui.horizontal(|ui| {
-                        ui.add(egui::Slider::new(&mut cart.pid.0, 0.0..=100.0).text("P"));
-                    });
-                    ui.horizontal(|ui| {
-                        ui.add(egui::Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
-                    });
-                    ui.horizontal(|ui| {
-                        ui.add(egui::Slider::new(&mut cart.pid.2, 0.0..=100.0).text("D"));
-                    });
+                    ui.add(egui::Slider::new(&mut cart.pid.0, 0.0..=100.0).text("P"));
+                    ui.add(egui::Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
+                    ui.add(egui::Slider::new(&mut cart.pid.2, 0.0..=100.0).text("D"));
+                });
+            });
+
+        egui::Window::new("Physics")
+            .anchor(Align2::LEFT_TOP, egui::emath::vec2(0., top))
+            .resizable(false)
+            .movable(false)
+            .collapsible(false)
+            // .title_bar(false)
+            .show(ctx, |ui| {
+                ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                    ui.label(format!("System Energy: {:.2}", cart.get_total_energy()));
+                    ui.label(format!("Kinetic Energy: {:.2}", cart.get_kinetic_energy()));
+                    ui.label(format!(
+                        "Potential Energy: {:.2}",
+                        cart.get_potential_energy()
+                    ));
+                    ui.selectable_value(&mut cart.integrator, cart::Integrator::Euler, "Euler");
+                    ui.selectable_value(
+                        &mut cart.integrator,
+                        cart::Integrator::RungeKutta4,
+                        "Runge-Kutta⁴",
+                    );
+                    ui.add(egui::Slider::new(&mut cart.steps, 1..=100).text("Steps per Frame"));
                 });
             });
 
