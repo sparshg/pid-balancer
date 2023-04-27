@@ -306,7 +306,7 @@ pub fn draw_ui(w: f32, grid: f32, cart: &mut Cart, forceplt: &mut Graph, forcepl
 
         egui::Window::new("Physics")
             .anchor(Align2::LEFT_TOP, egui::emath::vec2(0., 0.))
-            .default_width(1.25 * grid * w + 4.)
+            .default_width(1.25 * grid * w + 2.)
             .resizable(false)
             .movable(false)
             .collapsible(false)
@@ -344,7 +344,7 @@ pub fn draw_ui(w: f32, grid: f32, cart: &mut Cart, forceplt: &mut Graph, forcepl
                     ui.separator();
                     ui.horizontal(|ui| {
                         let enable = cart.enable;
-                        ui.label("System Controls: ");
+                        ui.label("System Controls:");
                         ui.toggle_value(
                             &mut cart.enable,
                             if enable {
