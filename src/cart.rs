@@ -4,7 +4,6 @@ use std::f64::consts::PI;
 
 use macroquad::prelude::*;
 
-use crate::camera::CameraDynamics;
 use crate::state::State;
 #[derive(PartialEq, Eq)]
 pub enum Integrator {
@@ -40,11 +39,9 @@ pub struct Cart {
     pub b2: f64,
     pub R: f64,
     g: f64,
-    r: f64,
     m1: f64,
     m2: f64,
     m3: f64,
-    camera: CameraDynamics,
 }
 
 impl Default for Cart {
@@ -60,13 +57,12 @@ impl Default for Cart {
             l: 1.,
             g: 9.80665,
             F: 0.,
-            Fclamp: 100.,
+            Fclamp: 400.,
             Finp: 20.,
             int: 0.,
             error: 0.,
             R: 0.1,
-            r: 0.1,
-            state: State::from(0.0, 0.0, 0.0, PI + 0.5),
+            state: State::default(),
             b1: 0.01,
             b2: 0.005,
             ui_scale: 0.3,
@@ -75,10 +71,9 @@ impl Default for Cart {
             m1,
             m2,
             m3,
-            pid: (50., 3., 5.),
+            pid: (40., 8., 2.5),
             steps: 5,
             enable: true,
-            camera: CameraDynamics::new(1.2, 0.75, 0., 0.0),
             integrator: Integrator::default(),
         }
     }
@@ -86,7 +81,7 @@ impl Default for Cart {
 
 impl Cart {
     pub fn update(&mut self, dt: f64) {
-        self.camera.update(self.state.x, self.state.v, dt);
+        self.state.update_camera(dt);
         let steps = if dt > 0.02 {
             (60. * dt) as i32
         } else {
@@ -96,10 +91,11 @@ impl Cart {
         for _ in 0..steps {
             self.error = PI - self.state.th;
             self.int += self.error * dt;
+            self.F = 0.;
             if self.enable {
-                self.F = (100.
-                    * (self.error * self.pid.0 - self.state.w * self.pid.1
-                        + self.int * self.pid.2))
+                self.F = (10.
+                    * (self.error * self.pid.0 + self.int * self.pid.1
+                        - self.state.w * self.pid.2))
                     .clamp(-self.Fclamp, self.Fclamp);
             }
             if is_key_down(KeyCode::Left) {
@@ -165,7 +161,7 @@ impl Cart {
 
     pub fn display(&self, color: Color, thickness: f32, length: f32, depth: f32) {
         draw_line(-length, -depth, length, -depth, thickness, color);
-        let x = (self.state.x - self.camera.y) as f32 * self.ui_scale;
+        let x = (self.state.x - self.state.camera.unwrap().y) as f32 * self.ui_scale;
         let R = self.R as f32 * self.ui_scale;
         let (c, s) = (
             (self.state.x / self.R).cos() as f32,
@@ -174,7 +170,7 @@ impl Cart {
 
         let ticks = (9. / self.ui_scale) as i32;
         let gap = 2. / ticks as f32;
-        let offset = (self.camera.y as f32 * self.ui_scale) % gap;
+        let offset = (self.state.camera.unwrap().y as f32 * self.ui_scale) % gap;
         for i in 0..ticks + 2 {
             draw_line(
                 (-offset + gap * i as f32 - 1.) * length,
@@ -225,17 +221,17 @@ impl Cart {
         );
 
         let (c, s) = ((self.state.th).cos() as f32, (self.state.th).sin() as f32);
-        let (l, r) = (self.l as f32 * self.ui_scale, self.r as f32 * self.ui_scale);
+        let l = self.l as f32 * self.ui_scale;
         // pendulum
         draw_line(
             x,
             -depth + h + 2. * R,
-            x + (l - r) * s,
-            -depth + h + 2. * R - (l - r) * c,
+            x + (l - R) * s,
+            -depth + h + 2. * R - (l - R) * c,
             thickness,
             color,
         );
-        draw_circle_lines(x + l * s, -depth + h + 2. * R - l * c, r, thickness, color);
+        draw_circle_lines(x + l * s, -depth + h + 2. * R - l * c, R, thickness, color);
         draw_circle(x, -depth + 2. * R + h, 0.01, color);
     }
 }

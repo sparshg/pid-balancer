@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct CameraDynamics {
     pub y: f64,
     yv: f64,

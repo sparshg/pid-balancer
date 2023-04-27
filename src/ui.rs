@@ -21,24 +21,17 @@ pub struct Graph {
 impl Graph {
     pub fn new(
         title: &'static [&'static str],
-        pos: [f32; 2],
-        grid: f32,
-        size: [f32; 2],
+        pos: Pos2,
+        size: egui::Vec2,
         colors: Option<Vec<Color32>>,
     ) -> Self {
         if let Some(colors) = &colors {
             assert!(title.len() == colors.len() + 1);
         }
         Graph {
-            title: title,
-            pos: Pos2 {
-                x: (0.5 + 0.5 * pos[0] * grid) * screen_width(),
-                y: 0.5 * screen_height() - 0.5 * pos[1] * grid * screen_width(),
-            },
-            size: egui::vec2(
-                0.5 * size[0] * grid * screen_width(),
-                0.5 * size[1] * grid * screen_width(),
-            ),
+            title,
+            pos,
+            size,
             history: (0..title.len() - 1).map(|_| VecDeque::new()).collect(),
             hsize: 100,
             colors: colors
@@ -195,14 +188,7 @@ pub fn draw_speedometer(
         WHITE,
     )
 }
-pub fn draw_ui(
-    w: f32,
-    y_top: f32,
-    grid: f32,
-    cart: &mut Cart,
-    forceplt: &mut Graph,
-    forceplt1: &mut Graph,
-) {
+pub fn draw_ui(w: f32, grid: f32, cart: &mut Cart, forceplt: &mut Graph, forceplt1: &mut Graph) {
     egui_macroquad::ui(|ctx| {
         // ctx.set_debug_on_hover(true);
         ctx.set_pixels_per_point(screen_width() / w);
@@ -211,67 +197,107 @@ pub fn draw_ui(
         egui::Window::new("Controls")
             .anchor(Align2::RIGHT_TOP, egui::emath::vec2(0., 0.))
             .pivot(Align2::RIGHT_TOP)
-            .default_width(1.25 * grid * screen_width() + 4.)
+            .default_width(1.25 * grid * w + 4.)
             .resizable(false)
             .movable(false)
             .collapsible(false)
             .title_bar(false)
             .show(ctx, |ui| {
                 ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
-                    ui.add(Slider::new(&mut cart.pid.0, 0.0..=150.0).text("P"));
-                    ui.add(Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
-                    ui.add(Slider::new(&mut cart.pid.2, 0.0..=40.0).text("D"));
+                    ui.add(
+                        Slider::new(&mut cart.pid.0, 0.0..=150.0)
+                            .drag_value_speed(0.2)
+                            .text("P"),
+                    );
+                    ui.add(
+                        Slider::new(&mut cart.pid.1, 0.0..=100.0)
+                            .drag_value_speed(0.1)
+                            .text("I"),
+                    );
+                    ui.add(
+                        Slider::new(&mut cart.pid.2, 0.0..=40.)
+                            .drag_value_speed(0.04)
+                            .text("D"),
+                    );
                 });
                 ui.separator();
                 ui.separator();
                 ui.columns(2, |cols| {
                     cols[0].with_layout(Layout::top_down(Align::Max), |ui| {
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.M));
+                            ui.add(
+                                DragValue::new(&mut cart.M)
+                                    .clamp_range(0.0..=100.)
+                                    .speed(0.05),
+                            );
                             ui.label("M_cart");
                         });
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.ml));
+                            ui.add(
+                                DragValue::new(&mut cart.ml)
+                                    .clamp_range(0.0..=100.)
+                                    .speed(0.05),
+                            );
                             ui.label("M_rod");
                         });
                         ui.horizontal(|ui| {
                             ui.add(
                                 DragValue::new(&mut cart.b1)
+                                    .clamp_range(0.0..=0.5)
+                                    .speed(0.0002)
                                     .custom_formatter(|x, _| format!("{:.3}", x)),
                             );
                             ui.label("Drag");
                         });
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.l));
+                            ui.add(
+                                DragValue::new(&mut cart.l)
+                                    .clamp_range(0.1..=10.)
+                                    .speed(0.05),
+                            );
                             ui.label("L_rod");
                         });
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.Fclamp));
+                            ui.add(DragValue::new(&mut cart.Fclamp).speed(1.));
                             ui.label("F_clamp");
                         });
                     });
                     cols[1].with_layout(Layout::top_down(Align::Max), |ui| {
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.m));
+                            ui.add(
+                                DragValue::new(&mut cart.m)
+                                    .clamp_range(0.0..=100.)
+                                    .speed(0.05),
+                            );
                             ui.label("M_bob");
                         });
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.mw));
+                            ui.add(
+                                DragValue::new(&mut cart.mw)
+                                    .clamp_range(0.0..=100.)
+                                    .speed(0.05),
+                            );
                             ui.label("M_wheel");
                         });
                         ui.horizontal(|ui| {
                             ui.add(
                                 DragValue::new(&mut cart.b2)
+                                    .clamp_range(0.0..=0.5)
+                                    .speed(0.0002)
                                     .custom_formatter(|x, _| format!("{:.3}", x)),
                             );
                             ui.label("Ang_Drag");
                         });
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.R));
+                            ui.add(
+                                DragValue::new(&mut cart.R)
+                                    .clamp_range(0.0..=1.)
+                                    .speed(0.005),
+                            );
                             ui.label("R_wheel");
                         });
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.Finp));
+                            ui.add(DragValue::new(&mut cart.Finp).speed(1.));
                             ui.label("Input Force");
                         });
                     });
@@ -280,7 +306,7 @@ pub fn draw_ui(
 
         egui::Window::new("Physics")
             .anchor(Align2::LEFT_TOP, egui::emath::vec2(0., 0.))
-            .default_width(1.25 * grid * screen_width() + 4.)
+            .default_width(1.25 * grid * w + 4.)
             .resizable(false)
             .movable(false)
             .collapsible(false)
@@ -304,7 +330,11 @@ pub fn draw_ui(
                         );
                     });
                     ui.separator();
-                    ui.add(Slider::new(&mut cart.steps, 1..=100).text("Steps / Frame"));
+                    ui.add(
+                        Slider::new(&mut cart.steps, 1..=100)
+                            .logarithmic(true)
+                            .text("Steps / Frame"),
+                    );
                     ui.add(
                         Slider::new(&mut cart.ui_scale, 0.03..=0.6)
                             .custom_formatter(|n, _| format!("{:.2}", n / 0.3))
@@ -323,7 +353,7 @@ pub fn draw_ui(
                                 "Controller: OFF"
                             },
                         );
-                        egui::reset_button(ui, cart);
+                        egui::reset_button(ui, &mut cart.state);
                     })
                 });
             });
