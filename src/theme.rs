@@ -2,7 +2,7 @@ use egui::{epaint, style, Color32, Context, Rounding};
 
 pub fn setup_theme() {
     egui_macroquad::cfg(|ctx| {
-        // get_theme(ctx);
+        get_theme(ctx);
     });
 }
 
@@ -35,7 +35,7 @@ fn get_theme(ctx: &Context) {
         dark_mode: false,
         window_shadow: epaint::Shadow::NONE,
         panel_fill: Color32::TRANSPARENT,
-        window_fill: Color32::TRANSPARENT,
+        window_fill: Color32::from_black_alpha(50),
         override_text_color: Some(Color32::WHITE),
         window_stroke: epaint::Stroke::NONE,
         faint_bg_color: Color32::TRANSPARENT,
