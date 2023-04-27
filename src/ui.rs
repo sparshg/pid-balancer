@@ -3,9 +3,11 @@ use std::collections::VecDeque;
 use egui::{
     epaint::Shadow,
     plot::{CoordinatesFormatter, Corner, HLine, Legend, Line, Plot, PlotBounds, PlotPoints},
-    Color32, Context, Frame, Pos2, Vec2,
+    Align, Align2, Color32, Context, DragValue, Frame, Layout, Pos2, Slider, Vec2,
 };
 use macroquad::prelude::*;
+
+use crate::cart::{self, Cart};
 
 pub struct Graph {
     title: &'static [&'static str],
@@ -192,6 +194,143 @@ pub fn draw_speedometer(
         vec2(x, y),
         WHITE,
     )
+}
+pub fn draw_ui(
+    w: f32,
+    y_top: f32,
+    grid: f32,
+    cart: &mut Cart,
+    forceplt: &mut Graph,
+    forceplt1: &mut Graph,
+) {
+    egui_macroquad::ui(|ctx| {
+        // ctx.set_debug_on_hover(true);
+        ctx.set_pixels_per_point(screen_width() / w);
+        forceplt.y(2.);
+        forceplt1.y(2.);
+        egui::Window::new("Controls")
+            .anchor(Align2::RIGHT_TOP, egui::emath::vec2(0., 0.))
+            .pivot(Align2::RIGHT_TOP)
+            .default_width(1.25 * grid * screen_width() + 4.)
+            .resizable(false)
+            .movable(false)
+            .collapsible(false)
+            .title_bar(false)
+            .show(ctx, |ui| {
+                ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
+                    ui.add(Slider::new(&mut cart.pid.0, 0.0..=150.0).text("P"));
+                    ui.add(Slider::new(&mut cart.pid.1, 0.0..=100.0).text("I"));
+                    ui.add(Slider::new(&mut cart.pid.2, 0.0..=40.0).text("D"));
+                });
+                ui.separator();
+                ui.separator();
+                ui.columns(2, |cols| {
+                    cols[0].with_layout(Layout::top_down(Align::Max), |ui| {
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(&mut cart.M));
+                            ui.label("M_cart");
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(&mut cart.ml));
+                            ui.label("M_rod");
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(
+                                DragValue::new(&mut cart.b1)
+                                    .custom_formatter(|x, _| format!("{:.3}", x)),
+                            );
+                            ui.label("Drag");
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(&mut cart.l));
+                            ui.label("L_rod");
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(&mut cart.Fclamp));
+                            ui.label("F_clamp");
+                        });
+                    });
+                    cols[1].with_layout(Layout::top_down(Align::Max), |ui| {
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(&mut cart.m));
+                            ui.label("M_bob");
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(&mut cart.mw));
+                            ui.label("M_wheel");
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(
+                                DragValue::new(&mut cart.b2)
+                                    .custom_formatter(|x, _| format!("{:.3}", x)),
+                            );
+                            ui.label("Ang_Drag");
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(&mut cart.R));
+                            ui.label("R_wheel");
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(&mut cart.Finp));
+                            ui.label("Input Force");
+                        });
+                    });
+                });
+            });
+
+        egui::Window::new("Physics")
+            .anchor(Align2::LEFT_TOP, egui::emath::vec2(0., 0.))
+            .default_width(1.25 * grid * screen_width() + 4.)
+            .resizable(false)
+            .movable(false)
+            .collapsible(false)
+            // .title_bar(false)
+            .show(ctx, |ui| {
+                ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                    ui.label(format!("System Energy: {:.2}", cart.get_total_energy()));
+                    ui.label(format!("Kinetic Energy: {:.2}", cart.get_kinetic_energy()));
+                    ui.label(format!(
+                        "Potential Energy: {:.2}",
+                        cart.get_potential_energy()
+                    ));
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        ui.label("Integrator: ");
+                        ui.selectable_value(&mut cart.integrator, cart::Integrator::Euler, "Euler");
+                        ui.selectable_value(
+                            &mut cart.integrator,
+                            cart::Integrator::RungeKutta4,
+                            "Runge-Kutta⁴",
+                        );
+                    });
+                    ui.separator();
+                    ui.add(Slider::new(&mut cart.steps, 1..=100).text("Steps / Frame"));
+                    ui.add(
+                        Slider::new(&mut cart.ui_scale, 0.03..=0.6)
+                            .custom_formatter(|n, _| format!("{:.2}", n / 0.3))
+                            .custom_parser(|s| s.parse::<f64>().map(|v| v * 0.3).ok())
+                            .text("Draw Scale"),
+                    );
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        let enable = cart.enable;
+                        ui.label("System Controls: ");
+                        ui.toggle_value(
+                            &mut cart.enable,
+                            if enable {
+                                "Controller: ON"
+                            } else {
+                                "Controller: OFF"
+                            },
+                        );
+                        egui::reset_button(ui, cart);
+                    })
+                });
+            });
+        forceplt.draw(ctx, cart.Fclamp);
+        forceplt1.draw(ctx, 9.);
+    });
+    egui_macroquad::draw();
 }
 
 pub fn draw_blue_grid(grid: f32, color: Color, thickness: f32, bold_every: i32, bold_thick: f32) {
