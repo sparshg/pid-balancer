@@ -9,6 +9,12 @@ pub struct CameraDynamics {
     k3: f64,
 }
 
+impl Default for CameraDynamics {
+    fn default() -> Self {
+        Self::new(1.5, 0.75, 0., 0.)
+    }
+}
+
 impl CameraDynamics {
     pub fn new(f: f64, z: f64, r: f64, init: f64) -> Self {
         CameraDynamics {

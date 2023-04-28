@@ -9,7 +9,6 @@ pub struct State {
     pub v: f64,
     pub w: f64,
     pub th: f64,
-    pub camera: Option<CameraDynamics>,
 }
 
 impl Default for State {
@@ -20,13 +19,7 @@ impl Default for State {
 
 impl State {
     pub fn from(x: f64, v: f64, w: f64, th: f64) -> Self {
-        State {
-            x,
-            v,
-            w,
-            th,
-            camera: Some(CameraDynamics::new(1.5, 0.75, 0., 0.0)),
-        }
+        State { x, v, w, th }
     }
 
     pub fn update(&mut self, (vdot, v, wdot, w): (f64, f64, f64, f64), dt: f64) {
@@ -35,12 +28,6 @@ impl State {
         self.th = (self.th % (2. * PI) + 2. * PI) % (2. * PI);
         self.v += vdot * dt;
         self.x += v * dt;
-    }
-
-    pub fn update_camera(&mut self, dt: f64) {
-        if let Some(camera) = &mut self.camera {
-            camera.update(self.x, self.v, dt);
-        }
     }
 
     pub fn after(&self, (vdot, v, wdot, w): (f64, f64, f64, f64), dt: f64) -> State {

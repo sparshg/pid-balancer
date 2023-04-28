@@ -4,7 +4,7 @@ use std::f64::consts::PI;
 
 use macroquad::prelude::*;
 
-use crate::state::State;
+use crate::{camera::CameraDynamics, state::State};
 #[derive(PartialEq, Eq)]
 pub enum Integrator {
     Euler,
@@ -38,6 +38,7 @@ pub struct Cart {
     pub b1: f64,
     pub b2: f64,
     pub R: f64,
+    pub camera: CameraDynamics,
     g: f64,
     m1: f64,
     m2: f64,
@@ -75,13 +76,14 @@ impl Default for Cart {
             steps: 5,
             enable: true,
             integrator: Integrator::default(),
+            camera: CameraDynamics::default(),
         }
     }
 }
 
 impl Cart {
     pub fn update(&mut self, dt: f64) {
-        self.state.update_camera(dt);
+        self.camera.update(self.state.x, self.state.v, dt);
         let steps = if dt > 0.02 {
             (60. * dt) as i32
         } else {
@@ -161,7 +163,7 @@ impl Cart {
 
     pub fn display(&self, color: Color, thickness: f32, length: f32, depth: f32) {
         draw_line(-length, -depth, length, -depth, thickness, color);
-        let x = (self.state.x - self.state.camera.unwrap().y) as f32 * self.ui_scale;
+        let x = (self.state.x - self.camera.y) as f32 * self.ui_scale;
         let R = self.R as f32 * self.ui_scale;
         let (c, s) = (
             (self.state.x / self.R).cos() as f32,
@@ -170,7 +172,7 @@ impl Cart {
 
         let ticks = (9. / self.ui_scale) as i32;
         let gap = 2. / ticks as f32;
-        let offset = (self.state.camera.unwrap().y as f32 * self.ui_scale) % gap;
+        let offset = (self.camera.y as f32 * self.ui_scale) % gap;
         for i in 0..ticks + 2 {
             draw_line(
                 (-offset + gap * i as f32 - 1.) * length,

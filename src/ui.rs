@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, f32::INFINITY};
 
 use egui::{
     epaint::Shadow,
@@ -7,7 +7,11 @@ use egui::{
 };
 use macroquad::prelude::*;
 
-use crate::cart::{self, Cart};
+use crate::{
+    camera::CameraDynamics,
+    cart::{self, Cart},
+    state::State,
+};
 
 pub struct Graph {
     title: &'static [&'static str],
@@ -258,7 +262,11 @@ pub fn draw_ui(w: f32, grid: f32, cart: &mut Cart, forceplt: &mut Graph, forcepl
                             ui.label("L_rod");
                         });
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.Fclamp).speed(1.));
+                            ui.add(
+                                DragValue::new(&mut cart.Fclamp)
+                                    .clamp_range(0.0..=INFINITY)
+                                    .speed(1.),
+                            );
                             ui.label("F_clamp");
                         });
                     });
@@ -297,7 +305,11 @@ pub fn draw_ui(w: f32, grid: f32, cart: &mut Cart, forceplt: &mut Graph, forcepl
                             ui.label("R_wheel");
                         });
                         ui.horizontal(|ui| {
-                            ui.add(DragValue::new(&mut cart.Finp).speed(1.));
+                            ui.add(
+                                DragValue::new(&mut cart.Finp)
+                                    .clamp_range(0.0..=INFINITY)
+                                    .speed(1.),
+                            );
                             ui.label("Input Force");
                         });
                     });
@@ -353,7 +365,11 @@ pub fn draw_ui(w: f32, grid: f32, cart: &mut Cart, forceplt: &mut Graph, forcepl
                                 "Controller: OFF"
                             },
                         );
-                        egui::reset_button(ui, &mut cart.state);
+                        if ui.button("Reset").clicked() {
+                            cart.state = State::default();
+                            cart.int = 0.;
+                            cart.camera = CameraDynamics::default();
+                        };
                     })
                 });
             });

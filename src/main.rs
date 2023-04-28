@@ -24,8 +24,8 @@ async fn main() {
     let grid = 0.15;
     let w_init = 1280.;
     let mut cart = Cart::default();
-    let vingette = load_texture("vingette.png").await.unwrap();
-    let font = load_ttf_font("Ubuntu-Regular.ttf").await.unwrap();
+    let vingette = Texture2D::from_file_with_format(include_bytes!("../vingette.png"), None);
+    let font = load_ttf_font_from_bytes(include_bytes!("../Ubuntu-Regular.ttf")).unwrap();
     setup_theme();
     let mut forceplt = Graph::new(
         &["Force", "Thrust"],
