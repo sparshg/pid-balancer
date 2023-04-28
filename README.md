@@ -9,4 +9,4 @@ Camera dynamics are implemented with the help of [this](https://www.youtube.com/
 
 Use arrow keys to control the cart, and disturb the ball.
 
-<img width="1392" alt="Screenshot 2023-04-27 at 8 30 20 PM 2" src="https://user-images.githubusercontent.com/43041139/234903949-43b97b14-b21a-4951-9278-aef4930595bc.png">
+<img width="1440" alt="Screenshot 2023-04-29 at 12 54 48 AM 2" src="https://user-images.githubusercontent.com/43041139/235235702-fe6b9321-3514-4431-80d8-ee51460f75dd.png">

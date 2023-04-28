@@ -46,7 +46,7 @@ async fn main() {
             zoom: vec2(1., screen_width() / screen_height()),
             ..Default::default()
         });
-        clear_background(BLUE);
+        clear_background(Color::new(0.00, 0.37, 0.9, 1.00));
         if is_key_pressed(KeyCode::Q) || is_key_pressed(KeyCode::Escape) {
             break;
         }

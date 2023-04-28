@@ -1,7 +1,5 @@
 use std::f64::consts::PI;
 
-use crate::camera::CameraDynamics;
-
 #[derive(Clone, Copy, PartialEq)]
 
 pub struct State {

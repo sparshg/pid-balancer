@@ -188,14 +188,14 @@ impl Cart {
             -depth - 0.001,
             1. - length - 0.003,
             -0.11 * self.ui_scale,
-            BLUE,
+            Color::new(0.00, 0.37, 0.9, 1.00),
         );
         draw_rectangle(
             length + 0.003,
             -depth - 0.001,
             1. - length - 0.003,
             -0.11 * self.ui_scale,
-            BLUE,
+            Color::new(0.00, 0.37, 0.9, 1.00),
         );
 
         let (w, h) = (R * 10., R * 3.5);
