@@ -161,7 +161,14 @@ impl Cart {
         self.get_potential_energy() + self.get_kinetic_energy()
     }
 
-    pub fn display(&self, color: Color, thickness: f32, length: f32, depth: f32) {
+    pub fn display(
+        &self,
+        back_color: Color,
+        color: Color,
+        thickness: f32,
+        length: f32,
+        depth: f32,
+    ) {
         draw_line(-length, -depth, length, -depth, thickness, color);
         let x = (self.state.x - self.camera.y) as f32 * self.ui_scale;
         let R = self.R as f32 * self.ui_scale;
@@ -188,14 +195,14 @@ impl Cart {
             -depth - 0.001,
             1. - length - 0.003,
             -0.11 * self.ui_scale,
-            Color::new(0.00, 0.37, 0.9, 1.00),
+            back_color,
         );
         draw_rectangle(
             length + 0.003,
             -depth - 0.001,
             1. - length - 0.003,
             -0.11 * self.ui_scale,
-            Color::new(0.00, 0.37, 0.9, 1.00),
+            back_color,
         );
 
         let (w, h) = (R * 10., R * 3.5);

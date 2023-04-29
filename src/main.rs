@@ -40,13 +40,13 @@ async fn main() {
         Some([Color32::WHITE, Color32::LIGHT_GREEN, Color32::LIGHT_RED].to_vec()),
     );
     next_frame().await;
+    let back_color = Color::new(0.00, 0.43, 0.95, 1.00);
 
     loop {
         set_camera(&Camera2D {
             zoom: vec2(1., screen_width() / screen_height()),
             ..Default::default()
         });
-        clear_background(Color::new(0.00, 0.37, 0.9, 1.00));
         if is_key_pressed(KeyCode::Q) || is_key_pressed(KeyCode::Escape) {
             break;
         }
@@ -56,9 +56,10 @@ async fn main() {
         forceplt.update([cart.F].to_vec());
         forceplt1.update([cart.int, -cart.state.w, cart.error].to_vec());
 
+        clear_background(back_color);
         draw_blue_grid(grid, SKYBLUE, 0.001, 3, 0.003);
 
-        cart.display(WHITE, 0.006, 6. * grid, 3. * grid);
+        cart.display(back_color, WHITE, 0.006, 6. * grid, 3. * grid);
         draw_speedometer(
             &format!(
                 "Angular Velocity ({}) {:.2}",
