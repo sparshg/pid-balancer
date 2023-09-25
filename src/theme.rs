@@ -1,4 +1,5 @@
 use egui::{epaint, style, Color32, Context, Rounding};
+use egui_macroquad::egui;
 
 pub fn setup_theme() {
     egui_macroquad::cfg(|ctx| {

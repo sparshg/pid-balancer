@@ -85,7 +85,7 @@ impl Cart {
     pub fn update(&mut self, dt: f64) {
         self.camera.update(self.state.x, self.state.v, dt);
         let steps = if dt > 0.02 {
-            ((self.steps * 60) as f32 * dt) as i32
+            ((self.steps * 60) as f64 * dt) as i32
         } else {
             self.steps
         };

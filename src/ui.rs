@@ -1,3 +1,4 @@
+use egui_macroquad::egui;
 use std::{collections::VecDeque, f32::INFINITY};
 
 use egui::{

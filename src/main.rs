@@ -1,6 +1,7 @@
 use crate::{theme::setup_theme, ui::Graph};
 use cart::Cart;
 use egui::{pos2, Color32};
+use egui_macroquad::egui;
 use macroquad::prelude::*;
 use ui::{draw_blue_grid, draw_speedometer, draw_ui, draw_vingette};
 mod camera;
