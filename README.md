@@ -20,4 +20,4 @@ I used Runge-Kutta method (4th order) to solve the system. System's energy will 
 Camera dynamics are implemented with the help of [this](https://www.youtube.com/watch?v=KPoeNZZ6H4s) video
 
 
-<img width="1440" alt="Screenshot 2023-04-29 at 7 16 31 PM 2" src="https://user-images.githubusercontent.com/43041139/235306236-401eb1c5-7e11-4d3d-8753-7138225334f5.png">
+<img width="1440" alt="demo" src="https://github.com/sparshg/pid-balancer/assets/43041139/0f4e9d4b-115e-437e-82c4-6cbdcc593822">
