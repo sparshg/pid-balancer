@@ -19,4 +19,4 @@ I used Runge-Kutta method (4th order) to solve the system. System's energy will 
 
 Camera dynamics are implemented with the help of [this](https://www.youtube.com/watch?v=KPoeNZZ6H4s) video
 
-<img width="1440" alt="demo" src="https://github.com/user-attachments/assets/6c44b9cd-5ed8-4dcf-99cf-d84df6c64af7">
+![result](https://github.com/user-attachments/assets/7dae2fd2-5dac-48cd-b440-f2f13524ac41)
