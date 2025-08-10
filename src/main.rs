@@ -54,26 +54,40 @@ async fn main() {
         if get_time() > 0. {
             cart.update(get_frame_time() as f64);
         }
-        forceplt.update([cart.F].to_vec());
-        forceplt1.update([cart.int, -cart.state.w, cart.error].to_vec());
+        forceplt.update([cart.physics.F].to_vec());
+        forceplt1.update(
+            [
+                cart.pid.integral() as f64,
+                -cart.physics.state.w,
+                cart.pid.error() as f64,
+            ]
+            .to_vec(),
+        );
 
         clear_background(back_color);
         draw_blue_grid(grid, SKYBLUE, 0.001, 3, 0.003);
 
-        cart.display(back_color, WHITE, 0.006, 6. * grid, 3. * grid);
+        cart.ui.display(
+            back_color,
+            WHITE,
+            0.006,
+            6. * grid,
+            3. * grid,
+            &cart.physics,
+        );
         draw_speedometer(
             &format!(
                 "Angular Velocity ({}) {:.2}",
-                if cart.state.w.is_sign_negative() {
+                if cart.physics.state.w.is_sign_negative() {
                     "-"
                 } else {
                     "+"
                 },
-                cart.state.w.abs()
+                cart.physics.state.w.abs()
             ),
             vec2(0., screen_height() / screen_width() - 0.75 * grid),
             0.08,
-            cart.state.w as f32,
+            cart.physics.state.w as f32,
             9.,
             0.8,
             font,
@@ -83,16 +97,16 @@ async fn main() {
         draw_speedometer(
             &format!(
                 "Cart Velocity ({}) {:.2}",
-                if cart.state.v.is_sign_negative() {
+                if cart.physics.state.v.is_sign_negative() {
                     "-"
                 } else {
                     "+"
                 },
-                cart.state.v.abs()
+                cart.physics.state.v.abs()
             ),
             vec2(0., screen_height() / screen_width() - 1.75 * grid),
             0.08,
-            cart.state.v as f32,
+            cart.physics.state.v as f32,
             20.,
             0.8,
             font,
